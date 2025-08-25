@@ -1,0 +1,15 @@
+_Store
+Thumbs.db
+
+*.log
+*.tmp
+*.swp
+*.bak
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+env/
+venv/
+tmp/
+tests/

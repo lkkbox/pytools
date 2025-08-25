@@ -162,11 +162,16 @@ def trimDecimalZeros(str):
 
 
 def plotcoast(ax, color='grey', linewidth=0.5, linestyle='-', resolution='0p5'):
+    from config import load_config
     import os
 
     HOME = os.environ.get('HOME')
+    subPath = load_config(f'etopo_coastlines_{resolution}')
+    filename = f'{HOME}/{subPath}'
 
-    filename = f'{HOME}/0_tools/etopo/ETOPO_{resolution}deg_coastlines.nc'
+    if not os.path.exists(filename):
+        raise FileNotFoundError(f'coastline file={filename}')
+
     with nc.Dataset(filename, 'r') as h_ds:
         xlist = h_ds['lon'][:]
         ylist = h_ds['lat'][:]
