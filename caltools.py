@@ -23,6 +23,10 @@ def conform_axis(data1, data2, dims1, dims2, axis):
 
 
 def centraldiff(data:np.ndarray, axis:int):
+    was1d = data.ndim == 1
+    if was1d:
+        data = data[:, None]
+
     data = np.swapaxes(data, 0, axis)
     data = np.concatenate(
         (
@@ -33,6 +37,9 @@ def centraldiff(data:np.ndarray, axis:int):
         axis=0 
     )
     data = np.swapaxes(data, 0, axis)
+
+    if was1d:
+        data = np.squeeze(data)
     return data
 
 
