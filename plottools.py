@@ -162,7 +162,7 @@ def trimDecimalZeros(str):
 
 
 def plotcoast(ax, color='grey', linewidth=0.5, linestyle='-', resolution='0p5'):
-    from config import load_config
+    from .config import load_config
     import os
 
     HOME = os.environ.get('HOME')

@@ -1,5 +1,5 @@
 import os
-import filetools as ft
+from . import filetools as ft
 import json
 
 
