@@ -140,7 +140,7 @@ def errorIfNotASubsetOfTheExistingVariable(fileName, varStruct):
     return
 
 def create(fileName, varName, shape, dimNames, use_my_attrs=True,
-           significant_digits=None, dtype=np.float32):
+           significant_digits=None, dtype=np.float32, complevel=9, shuffle=True):
     # ---- validate inputs
     chkt.checkType(fileName, str, 'fileName')
     chkt.checkType(varName, str, 'varName')
@@ -194,7 +194,8 @@ def create(fileName, varName, shape, dimNames, use_my_attrs=True,
         if len(shape) == 1 and varName == dimNames[0]:
             h_file.createDimension(dimNames[0], shape[0])
         h_file.createVariable(
-            varName, dtype, dimNames, significant_digits=significant_digits, compression='zlib', complevel=9, shuffle=True
+            varName, dtype, dimNames, significant_digits=significant_digits, 
+            compression='zlib', complevel=complevel, shuffle=shuffle
         )
         if use_my_attrs:
             set_my_attrs(h_file, dimNames)
@@ -202,7 +203,10 @@ def create(fileName, varName, shape, dimNames, use_my_attrs=True,
     return
 
 
-def save(fileName, varStruct, overwrite=False, use_my_attrs=True, significant_digits=None):
+def save(
+    fileName, varStruct, overwrite=False, use_my_attrs=True, significant_digits=None,
+    dtype=np.float32, complevel=9, shuffle=True
+):
 
     if not overwrite:
         if os.path.isfile(fileName):
@@ -267,11 +271,14 @@ def save(fileName, varStruct, overwrite=False, use_my_attrs=True, significant_di
             if name in dimnames:
                 h_file.createDimension(name, len(value))
                 h_file.createVariable(
-                    name, np.float32, (name,), compression='zlib', complevel=9, shuffle=True)
+                    name, dtype, (name,), compression='zlib', complevel=complevel, shuffle=shuffle
+                )
                 continue
             if name == varName:
                 h_file.createVariable(
-                    name, np.float32, dimnames, significant_digits=significant_digits, compression='zlib', complevel=9, shuffle=True)
+                    name, dtype, dimnames, significant_digits=significant_digits, 
+                    compression='zlib', complevel=complevel, shuffle=shuffle
+                )
                 continue
 
         # write values
