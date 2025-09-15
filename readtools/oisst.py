@@ -42,6 +42,8 @@ def readTotal(minMaxX, minMaxY, minMaxT):
     if varName == 'mslp':
         data /= 100
 
+    data[(np.abs(data) > 1e10)] = np.nan
+
     return data, [TIME, lat, lon]
 
 
@@ -50,8 +52,10 @@ def readClim(minMaxX, minMaxY, minMaxT=[0, 365], climYears=[2006, 2020], climTyp
     strClimYears = '-'.join(str(y) for y in climYears)
     fileName = f'/nwpr/gfs/com120/9_data/OISST/v_2p1/clim/sst.day.mean.v2.clim.{strClimYears}_{climType}.nc'
 
-    it = [int(tt.dayOfYear(int(t))) -
-          1 for t in np.r_[minMaxT[0]:minMaxT[1]+1]]
+    it = [
+        int(tt.dayOfYear(int(t))) - 1 
+        for t in np.r_[minMaxT[0]:minMaxT[1]+1]
+    ]
     minMaxT = [min(it), max(it)]
     data, time, lat, lon = rt.readw2g(**{
         'filename': fileName,
@@ -61,6 +65,8 @@ def readClim(minMaxX, minMaxY, minMaxT=[0, 365], climYears=[2006, 2020], climTyp
         'minTime': tt.ymd2float(2000, 1, 1),
         'intervalTime': [1, 'day'],
     })
+
+    data[(np.abs(data) > 1e10)] = np.nan
 
     return data, [time, lat, lon]
 

@@ -409,14 +409,29 @@ def getVarDimLength(fileName, varName, iDim):
     return shape[iDim]
 
 
-def ncreadattt(fileName: str, varName: str, attName: str) -> str:
+def ncreadatt(fileName: str, varName: str, attName: str) -> str:
     with nc.Dataset(fileName, 'r') as hFile:
         if varName == '/':
             hVar = hFile
         else:
             hVar = hFile[varName]
-        attValue = hVar.getncattr(attName)
+        
+        try:
+            attValue = hVar.getncattr(attName)
+        except AttributeError:
+            raise AttributeError(f'failed to read attributes:\n  {fileName=}\n  {varName=}\n  attribute name "{attName}"')
+
     return attValue
+
+
+def getAttNames(fileName:str, varName:str) -> list[str]:
+    with nc.Dataset(fileName, 'r') as hFile:
+        if varName == '/':
+            hVar = hFile
+        else:
+            hVar = hFile[varName]
+
+        return hVar.ncattrs()
 
 
 def ncreadtime(
@@ -426,7 +441,7 @@ def ncreadtime(
     from . import timetools as tt
 
     timeValue = read(fileName, varName)
-    timeUnits = ncreadattt(fileName, varName, attName).lower()
+    timeUnits = ncreadatt(fileName, varName, attName).lower()
 
     # timeUnits = "{timeDelta}{delimitter}since{delimitter}{timeOrigin}"
     # parse time units -> timeDelta & timeOrigin

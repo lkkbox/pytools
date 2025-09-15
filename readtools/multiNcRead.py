@@ -47,7 +47,7 @@ def read(
     chkt.checkType(iDimT, [int, None], 'iDimT')
     chkt.checkType(decodeTime, bool, 'decodeTime')
     chkt.checkType(ignoreDimNames, bool, 'ignoreDimNames')
-    chkt.checkType(iDimValIgnored, list, 'ignoreDimNames')
+    chkt.checkType(iDimValIgnored, list, 'iDimValIgnored')
     chkt.checkType(allowMissingFile, bool, 'allowMissingFile')
 
     for path in paths:

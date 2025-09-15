@@ -34,11 +34,13 @@ def total(varName, minMaxs, source=None, grid=None, freq=None, root=None):
         root = '/nwpr/gfs/com120/9_data'
 
 
-    if tt.year(minMaxs2[0][0]) > 2020 and source == 'era5_prs_daymean':
-        source = 'era5_prs_daymean_nrt'
+    if tt.year(minMaxs2[0][0]) > 2020 :
+        if source == 'era5_prs_daymean':
+            source = 'era5_prs_daymean_nrt'
+        elif source == 'era5_sfc_daymean':
+             source = 'era5_sfc_daymean_nrt'
     elif tt.year(minMaxs2[0][0]) >= 2025 and source == 'CMORPH':
         source = 'CMORPH_nrt'
-        
 
     ncVarName = varName
     scale = 1.0
@@ -220,11 +222,17 @@ def clim(varName, minMaxs, source=None, grid=None, freq=None,
         if varName == 'mslp':
             ncVarName = 'msl'
 
-
     elif source == 'CMORPH' or source == 'CMORPH_nrt':
         dataRoot = f'{root}/CMORPH/clim'
         paths = [f'{dataRoot}/CMORPH_clim_{climYears[0]}_{climYears[1]}_0p5_{climType}.nc']
         ncVarName = 'cmorph'
+
+    elif source == 'OISST':
+        dataRoot = f'{root}/OISST'
+        paths = [f'{dataRoot}/v_2p1/clim/sst.day.mean.v2.clim.{climYears[0]}-{climYears[1]}_{climType}.nc']
+        year0 = 2020
+        ncVarName = 'sst'
+
     else:
         raise NotImplementedError(f'{varName =}, {source = }')
 
