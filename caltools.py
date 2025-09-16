@@ -175,8 +175,13 @@ def bootstrapResampling(data, numSamples, axis=0):
     lenDim = data.shape[0]
     indices = np.random.randint(0, lenDim, lenDim*numSamples)
     indices = np.reshape(indices, (numSamples, lenDim))
-    for i in range(numSamples):
-        newData[i, :] = np.nanmean(data[indices[i, :], :], axis=0)
+
+    if (data.ndim) > 1:
+        for i in range(numSamples):
+            newData[i, :] = np.nanmean(data[indices[i, :], :], axis=0)
+    else:
+        for i in range(numSamples):
+            newData[i] = np.nanmean(data[indices[i, :]], axis=0)
     return np.swapaxes(newData, 0, axis)
 
 
@@ -184,7 +189,7 @@ def bootstrapPR(data, numSamples, prs, axis=0):
     data = np.swapaxes(data, 0, axis)
     boots = bootstrapResampling(data, numSamples)
     dprs = np.percentile(boots, prs, axis=0)
-    return dprs
+    return np.swapaxes(dprs, 0, axis)
 
 
 def bootstrapResampledDifferenceLevel(data1, data2, numSamples, axis=0):
@@ -218,15 +223,16 @@ def smooth(dataArray, numSmooths, axis=0, **kwargs):
     output[isnan] = np.nan
     return output
 
-# def nanSmooth(dataArray, numSmooths, axis=0, **kwargs):
-#     from scipy.ndimage import uniform_filter1d
-#     isnan = np.isnan(dataArray)
-#     dataArray[isnan] = 0
-#     dataArray = uniform_filter1d(
-#         dataArray, numSmooths, axis, mode='nearest', **kwargs
-#     )
-#     dataArray[isnan] = np.nan
-#     return dataArray
+
+def nanSmooth(dataArray, numSmooths, axis=0, **kwargs):
+    from scipy.ndimage import uniform_filter1d
+    isnan = np.isnan(dataArray)
+    dataArray[isnan] = 0
+    dataArray = uniform_filter1d(
+        dataArray, numSmooths, axis, mode='nearest', **kwargs
+    )
+    dataArray[isnan] = np.nan
+    return dataArray
 
 
 def getContinuousIntegersIntervals(inputList):

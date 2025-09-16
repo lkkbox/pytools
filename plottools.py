@@ -2,6 +2,24 @@ import netCDF4 as nc
 import numpy as np
 
 
+def hatched(ax, x, y, z, *args, **kwargs):
+    nx = len(x)
+    ny = len(y)
+
+    dx2 = np.gradient(x) / 2
+    dy2 = np.gradient(y) / 2
+    
+    xx, yy = [], []
+    for ix in range(nx):
+        for iy in range(ny):
+            if not z[iy, ix]:
+                continue
+            xx.extend([x[ix] - dx2[ix], x[ix] + dx2[ix], np.nan])
+            yy.extend([y[iy] - dy2[iy], y[iy] + dy2[iy], np.nan])
+
+    ax.plot(xx, yy, *args, **kwargs)
+
+
 def plotbox(ax, lonwe, latsn, *args, **kwargs):
     lon = [lonwe[i] for i in [0, 1, 1, 0, 0]]
     lat = [latsn[i] for i in [1, 1, 0, 0, 1]]
