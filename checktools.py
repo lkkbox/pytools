@@ -1,4 +1,7 @@
 from collections.abc import Iterable
+import inspect
+from typing import Callable, Tuple
+
 
 
 def checkType(target, validTypes, codeName):
@@ -51,3 +54,24 @@ def checkLambdaArgs(lambdaObj, validArgs, codeName=None, raiseError=True):
             f'Lambda arguments for "{codeName}" shout be {
                 validArgs}, (found={args})'
         )
+
+
+def param_range(func: Callable) -> Tuple[int, int]:
+    sig = inspect.signature(func)
+    min_args = 0
+    max_args = 0
+    has_var_positional = False  # *args
+
+    for param in sig.parameters.values():
+        if param.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD):
+            if param.default == inspect.Parameter.empty:
+                min_args += 1
+            max_args += 1
+        elif param.kind == inspect.Parameter.VAR_POSITIONAL:
+            has_var_positional = True
+        # VAR_KEYWORD (**kwargs) does not affect positional argument count
+
+    if has_var_positional:
+        max_args = float('inf')
+
+    return (min_args, max_args)

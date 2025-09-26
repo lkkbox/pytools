@@ -62,7 +62,7 @@ def contourfill(
     z2 = np.nan * np.ones_like(z)
 
     if levels is None:
-        from caltools import nearest_nice_number
+        from ..caltools import nearest_nice_number
         levels = nearest_nice_number(np.percentile(z[(~np.isnan(z))], np.r_[0:110:10]))
 
     levels2 = [i for i in range(len(levels))]
@@ -180,7 +180,7 @@ def trimDecimalZeros(str):
 
 
 def plotcoast(ax, color='grey', linewidth=0.5, linestyle='-', resolution='0p5'):
-    from .config import load_config
+    from ..config import load_config
     import os
 
     HOME = os.environ.get('HOME')

@@ -2,7 +2,7 @@ import numpy as np
 import os
 import inspect
 from matplotlib.colors import ListedColormap
-from ..plottools import contourf2
+from ..plottools.plottools import contourf2
 from ..caltools import interp_1d
 import colorsys
 

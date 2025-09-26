@@ -11,7 +11,7 @@ from calendar import isleap
 class RMM_Tool:
 
   def __init__(r):
-    r.root_dir = '/nwpr/gfs/com120/0_tools/MJO/RMM_WH04/'
+    r.root_dir = '/nwpr/gfs/com120/tools/pytools/MJO/RMM_WH04/'
     r.read_eof_mode()
     return
 

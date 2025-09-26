@@ -59,7 +59,7 @@ def getModuleName():
 # ===============================
 def check_des_path(
     desPath:str, 
-    makeParentDir:bool=True,
+    makeParentDir:bool=False,
     throwError:bool=True,
     accepts:list=[0, 1],
 ) -> Literal[0, 1, 2, 3, 4]:
