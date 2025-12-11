@@ -7,6 +7,7 @@
       'dimNName': dimN,
     }
 '''
+from calendar import isleap
 from . import checktools as chkt
 import netCDF4 as nc
 import numpy as np
@@ -442,6 +443,10 @@ def ncreadtime(
 
     timeValue = read(fileName, varName)
     timeUnits = ncreadatt(fileName, varName, attName).lower()
+    if 'calendar' in getAttNames(fileName, varName):
+        strCalendar = ncreadatt(fileName, varName, 'calendar')
+    else:
+        strCalendar = None
 
     # timeUnits = "{timeDelta}{delimitter}since{delimitter}{timeOrigin}"
     # parse time units -> timeDelta & timeOrigin
@@ -460,8 +465,12 @@ def ncreadtime(
 
     strTimeDelta = timeUnits[0]
     strTimeOrigin = delimitter.join(timeUnits[2:])
+    # weird origin time (CMIP6 models)
+    if strTimeOrigin == '1-1-1 00:00:00':
+        timeOrigin = tt.ymd2float(1, 1, 1)
+    else:
+        timeOrigin = tt.string2float(strTimeOrigin)
 
-    timeOrigin = tt.string2float(strTimeOrigin)
     TIMEDELTA = {
         'second': 1/86400,
         'seconds': 1/86400,
@@ -484,7 +493,27 @@ def ncreadtime(
     elif strTimeDelta in STRYEAR:
         time = [tt.addMonth(timeOrigin, v*12) for v in timeValue]
     else:
-        time = [timeOrigin + v*TIMEDELTA[strTimeDelta] for v in timeValue]
+        if strCalendar in ['365_day', '365_days']:
+            time = []
+            year0, *__ = tt.float2ymd(timeOrigin)
+            remainder0 = timeOrigin - tt.ymd2float(year0, 1, 1)
+            for v in timeValue:
+                deltaYear = int(v // 365)
+                deltaRemainder = v - deltaYear * 365
+
+                year = year0 + deltaYear
+                remainder = remainder0 + deltaRemainder
+
+                t = tt.ymd2float(year, 1, 1) + remainder
+                if (
+                    (isleap(year) and t >= tt.ymd2float(year, 2, 29))
+                    or (isleap(year+1) and t >= tt.ymd2float(year+1, 2, 29))
+                ):
+                    t += 1
+
+                time.append(t)
+        else:
+            time = [timeOrigin + v*TIMEDELTA[strTimeDelta] for v in timeValue]
 
     return np.array(time)
 
