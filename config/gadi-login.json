@@ -1,0 +1,4 @@
+{
+    "etopo_coastlines_0p1": "data/static/ETOPO/ETOPO_0p1deg_coastlines.nc",
+    "etopo_coastlines_0p5": "data/static/ETOPO/ETOPO_0p5deg_coastlines.nc"
+}

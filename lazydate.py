@@ -193,26 +193,6 @@ def num2str(num: float, formatter: str = '%Y%m%d') -> str:
 
 
 # ---- other date manipulations for num
-def months_between(num1: Numeric, num2: Numeric) -> int:
-    '''
-    return the number of months between num1 and num2
-    ----
-    example
-        n = months_between(
-            date2num(2000, 1, 1),
-            date2num(2000, 3, 1),
-        ) # n = 2
-
-        n = months_between(
-            date2num(2000, 4, 1),
-            date2num(1999, 12, 1),
-        ) # n = -4
-    '''
-    year1, month1 = num2date(num1, n_returns=2)
-    year2, month2 = num2date(num2, n_returns=2)
-    return 12 * (year2 - year1) + (month2 - month1)
-
-
 def add_month(num: Numeric, delta: int = 1, warning: bool = True) -> Numeric:
     year, month, day = num2date(num, n_returns=3)
     remains = num % 1
@@ -246,7 +226,27 @@ def add_month(num: Numeric, delta: int = 1, warning: bool = True) -> Numeric:
     return num1stOfMonth + (day - 1) + remains
 
 
-# ---- utilities
+def months_between(num1: Numeric, num2: Numeric) -> int:
+    '''
+    return the number of months between num1 and num2
+    ----
+    example
+        n = months_between(
+            date2num(2000, 1, 1),
+            date2num(2000, 3, 1),
+        ) # n = 2
+
+        n = months_between(
+            date2num(2000, 4, 1),
+            date2num(1999, 12, 1),
+        ) # n = -4
+    '''
+    year1, month1 = num2date(num1, n_returns=2)
+    year2, month2 = num2date(num2, n_returns=2)
+    return 12 * (year2 - year1) + (month2 - month1)
+
+
+# ---- properties
 def now():
     '''
     return the numbers of days from _ORIGIN to now
@@ -314,8 +314,30 @@ def day_of_year(num: Numeric) -> int:
     return num2datetime(num).timetuple().tm_yday
 
 
-def day_of_week(num):
+def day_of_week(num: Numeric) -> int:
     return num2datetime(num).timetuple().tm_wday
+
+
+def day_of_clim(num: Numeric, keepDecimals=False):
+    '''
+    return the day of year, but as in a leap year, to calculate the climatology
+    2000-02-28 -> 59.0    2001-02-28 -> 59.0
+    2000-02-29 -> 60.0
+    2000-03-31 -> 61.0    2001-03-01 -> 61.0
+    '''
+    d = num2datetime(num)
+
+    month = d.month
+    day = d.day
+
+    remains = num % 1
+
+    delta = date2num(2000, month, day) - date2num(2000, 1, 1)
+
+    if keepDecimals:
+        delta += remains
+
+    return delta + 1
 
 
 # ---- lazier shortcut

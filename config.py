@@ -26,13 +26,27 @@ def load_config(request:str|list[str]) -> str | list | None:
 
 
 def get_config_path() -> str:
-    machine = os.getenv("HOSTNAME")
     moduledir = ft.getModuleDirName()
-    path = f'{moduledir}/config/{machine}.json'
-    if os.path.exists(path):
-        return path
 
-    path = f'{moduledir}/config/template.json'
+    machine = os.getenv("HOSTNAME")
+    specialMachineNames = {
+        'gadi-login-01.gadi.nci.org.au': 'gadi-login.json',
+        'gadi-login-02.gadi.nci.org.au': 'gadi-login.json',
+        'gadi-login-03.gadi.nci.org.au': 'gadi-login.json',
+        'gadi-login-04.gadi.nci.org.au': 'gadi-login.json',
+        'gadi-login-05.gadi.nci.org.au': 'gadi-login.json',
+        'gadi-login-06.gadi.nci.org.au': 'gadi-login.json',
+        'gadi-login-07.gadi.nci.org.au': 'gadi-login.json',
+        'gadi-login-08.gadi.nci.org.au': 'gadi-login.json',
+        'gadi-login-09.gadi.nci.org.au': 'gadi-login.json',
+        'gadi-login-10.gadi.nci.org.au': 'gadi-login.json',
+        'localhost': 'lorenz',
+    }
+
+    defaultFileName = 'template.json'
+    fileName = specialMachineNames.get(machine, defaultFileName)
+
+    path = f'{moduledir}/config/{fileName}'
     if os.path.exists(path):
         return path
 

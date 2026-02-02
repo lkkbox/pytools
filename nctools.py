@@ -1,12 +1,13 @@
-'''
-    varStruct = {
-      'variableName': variable,
-      'dim0Name': dim0,
-      'dim1Name': dim1,
-      ...
-      'dimNName': dimN,
-    }
-'''
+"""
+varStruct = {
+  'variableName': variable,
+  'dim0Name': dim0,
+  'dim1Name': dim1,
+  ...
+  'dimNName': dimN,
+}
+"""
+
 from calendar import isleap
 from . import checktools as chkt
 import netCDF4 as nc
@@ -17,7 +18,7 @@ import traceback
 
 def getVarNames(fileName: str) -> list:
     try:
-        with nc.Dataset(fileName, 'r') as h:
+        with nc.Dataset(fileName, "r") as h:
             varNames = list(h.variables.keys())
     except Exception as e:
         print(e)
@@ -26,13 +27,14 @@ def getVarNames(fileName: str) -> list:
 
 
 def getDimNames(fileName: str, varName: str) -> list:
-    with nc.Dataset(fileName, 'r') as h:
+    with nc.Dataset(fileName, "r") as h:
         dimNames = list(h[varName].dimensions)
     return dimNames
 
+
 def getVarUnits(fileName, varName):
     try:
-        with nc.Dataset(fileName, 'r') as h:
+        with nc.Dataset(fileName, "r") as h:
             units = h[varName].units
     except Exception as e:
         print(e)
@@ -41,21 +43,19 @@ def getVarUnits(fileName, varName):
 
 
 def _errorIfFileExists(fileName):
-
     if not (os.path.isfile(fileName) | os.path.islink(fileName)):
         return
 
     yesNo = askYesNoRepeatedly(
-        '[nctools]: file for writing already exists, do you want to continue?'
-        + f'\n{fileName=}\n'
+        "[nctools]: file for writing already exists, do you want to continue?"
+        + f"\n{fileName=}\n"
     )
 
-    if yesNo != 'yes':
-        raise FileExistsError(f'{fileName=}')
+    if yesNo != "yes":
+        raise FileExistsError(f"{fileName=}")
 
 
 def _errorIfVariableExists(fileName, varName):
-
     if not (os.path.isfile(fileName) | os.path.islink(fileName)):
         return
 
@@ -63,36 +63,35 @@ def _errorIfVariableExists(fileName, varName):
         return
 
     yesNo = askYesNoRepeatedly(
-        '[nctools]: The variable already exists in file.'
-        + 'Do you want to continue?'
-        + f'\n{varName=}, {fileName=}\n'
+        "[nctools]: The variable already exists in file."
+        + "Do you want to continue?"
+        + f"\n{varName=}, {fileName=}\n"
     )
 
-    if yesNo != 'yes':
-        raise NameError(f'{varName=} in {fileName=}')
+    if yesNo != "yes":
+        raise NameError(f"{varName=} in {fileName=}")
 
 
 def _errorIfFileNotExists(fileName):
     if not os.path.exists(fileName):
-        raise FileNotFoundError(f'{fileName=}')
+        raise FileNotFoundError(f"{fileName=}")
 
 
 def _errorIfVariableNotExists(fileName, varName):
     _errorIfFileNotExists(fileName)
     if varName not in getVarNames(fileName):
-        raise ValueError(f'{varName=} not found in {fileName=}')
+        raise ValueError(f"{varName=} not found in {fileName=}")
 
 
 def askYesNoRepeatedly(message, numRepeats=3):
     for __ in range(numRepeats):
         yesNo = input(message + 'only accept "yes"/"no"\n')
-        if yesNo in ['yes', 'no']:
+        if yesNo in ["yes", "no"]:
             break
     return yesNo
 
 
 def errorIfInconsistentExistingVariable(fileName, varStruct):
-
     if not (os.path.isfile(fileName) or os.path.islink(fileName)):
         return
 
@@ -101,23 +100,22 @@ def errorIfInconsistentExistingVariable(fileName, varStruct):
         return
 
     newShape = varStruct[varName].shape
-    with nc.Dataset(fileName, 'r') as h:
+    with nc.Dataset(fileName, "r") as h:
         oldDimNames = list(h[varName].dimensions)
         if newDimNames != oldDimNames:
             raise ValueError(
-                'The input dimension names are different than the existing file.\n'
-                + f'{oldDimNames=}\n{newDimNames=}'
+                "The input dimension names are different than the existing file.\n"
+                + f"{oldDimNames=}\n{newDimNames=}"
             )
         if newShape != h[varName].shape:
             raise ValueError(
-                'The input variable has a different shape than the existing file.\n'
-                + f'oldShape = {h[varName].shape}\n{newShape=}'
+                "The input variable has a different shape than the existing file.\n"
+                + f"oldShape = {h[varName].shape}\n{newShape=}"
             )
     return
 
 
 def errorIfNotASubsetOfTheExistingVariable(fileName, varStruct):
-
     if not (os.path.isfile(fileName) or os.path.islink(fileName)):
         return
 
@@ -126,35 +124,45 @@ def errorIfNotASubsetOfTheExistingVariable(fileName, varStruct):
         return
 
     newShape = varStruct[varName].shape
-    with nc.Dataset(fileName, 'r') as h:
+    with nc.Dataset(fileName, "r") as h:
         oldDimNames = list(h[varName].dimensions)
         if newDimNames != oldDimNames:
             raise ValueError(
-                'The input dimension names are different than the existing file.\n'
-                + f'{oldDimNames=}\n{newDimNames=}'
+                "The input dimension names are different than the existing file.\n"
+                + f"{oldDimNames=}\n{newDimNames=}"
             )
         if newShape != h[varName].shape:
             raise ValueError(
-                'The input variable has a different shape than the existing file.\n'
-                + f'oldShape = {h[varName].shape}\n{newShape=}'
+                "The input variable has a different shape than the existing file.\n"
+                + f"oldShape = {h[varName].shape}\n{newShape=}"
             )
     return
 
-def create(fileName, varName, shape, dimNames, use_my_attrs=True,
-           significant_digits=None, dtype=np.float32, complevel=9, shuffle=True):
+
+def create(
+    fileName,
+    varName,
+    shape,
+    dimNames,
+    use_my_attrs=True,
+    significant_digits=None,
+    dtype=np.float32,
+    complevel=9,
+    shuffle=True,
+):
     # ---- validate inputs
-    chkt.checkType(fileName, str, 'fileName')
-    chkt.checkType(varName, str, 'varName')
-    chkt.checkType(shape, [tuple, list], 'shape')
-    chkt.checkType(dimNames, [tuple, list], 'dimNames')
-    chkt.checkType(use_my_attrs, bool, 'use_my_attrs')
-    chkt.checkType(significant_digits, [None, int], 'significant_digits')
-    [chkt.checkType(d, int, 'elements in shape') for d in shape]
-    [chkt.checkType(d, str, 'elements in dimNames') for d in dimNames]
+    chkt.checkType(fileName, str, "fileName")
+    chkt.checkType(varName, str, "varName")
+    chkt.checkType(shape, [tuple, list], "shape")
+    chkt.checkType(dimNames, [tuple, list], "dimNames")
+    chkt.checkType(use_my_attrs, bool, "use_my_attrs")
+    chkt.checkType(significant_digits, [None, int], "significant_digits")
+    [chkt.checkType(d, int, "elements in shape") for d in shape]
+    [chkt.checkType(d, str, "elements in dimNames") for d in dimNames]
     if len(shape) != len(dimNames):
         raise ValueError(
-            'The number of dimensions in shape and dimNames are different.'
-            + f'{len(shape)=}, {len(dimNames)=}'
+            "The number of dimensions in shape and dimNames are different."
+            + f"{len(shape)=}, {len(dimNames)=}"
         )
 
     # ---- casting shapes to tuple and dimNames to list
@@ -167,16 +175,16 @@ def create(fileName, varName, shape, dimNames, use_my_attrs=True,
             existingShape = getVarShape(fileName, varName)
             if shape != existingShape:
                 raise ValueError(
-                    'The shape of the variable is different from the existing file.\n'
-                    + f'{existingShape=}, {shape=}'
+                    "The shape of the variable is different from the existing file.\n"
+                    + f"{existingShape=}, {shape=}"
                 )
             existingDimNames = getDimNames(fileName, varName)
             if dimNames != existingDimNames:
                 raise ValueError(
-                    'The dimension names are different from the existing file.\n'
-                    + f'{existingDimNames=}, {dimNames=}'
+                    "The dimension names are different from the existing file.\n"
+                    + f"{existingDimNames=}, {dimNames=}"
                 )
-            return # variable already exists and passed the check
+            return  # variable already exists and passed the check
 
     # ---- create the dimensions
     doDim = False
@@ -187,16 +195,28 @@ def create(fileName, varName, shape, dimNames, use_my_attrs=True,
 
     if doDim:
         for dimName, dimLength in zip(dimNames, shape):
-            create(fileName, dimName, [dimLength], [dimName], use_my_attrs,
-                significant_digits=None, dtype=np.float32)
+            create(
+                fileName,
+                dimName,
+                [dimLength],
+                [dimName],
+                use_my_attrs,
+                significant_digits=None,
+                dtype=np.float32,
+            )
 
     # ---- create the variable
-    with nc.Dataset(fileName, 'a') as h_file:
+    with nc.Dataset(fileName, "a") as h_file:
         if len(shape) == 1 and varName == dimNames[0]:
             h_file.createDimension(dimNames[0], shape[0])
         h_file.createVariable(
-            varName, dtype, dimNames, significant_digits=significant_digits, 
-            compression='zlib', complevel=complevel, shuffle=shuffle
+            varName,
+            dtype,
+            dimNames,
+            significant_digits=significant_digits,
+            compression="zlib",
+            complevel=complevel,
+            shuffle=shuffle,
         )
         if use_my_attrs:
             set_my_attrs(h_file, dimNames)
@@ -205,25 +225,31 @@ def create(fileName, varName, shape, dimNames, use_my_attrs=True,
 
 
 def save(
-    fileName, varStruct, overwrite=False, use_my_attrs=True, significant_digits=None,
-    dtype=np.float32, complevel=9, shuffle=True
+    fileName,
+    varStruct,
+    overwrite=False,
+    use_my_attrs=True,
+    significant_digits=None,
+    dtype=np.float32,
+    complevel=9,
+    shuffle=True,
 ):
-
     if not overwrite:
         if os.path.isfile(fileName):
             n = 0
             while n < 10:
                 n += 1
                 yn = input(
-                    f'nctools: file for saving already exists, do you want to overwrite it?\n{fileName}\n')
-                if yn == 'yes':
+                    f"nctools: file for saving already exists, do you want to overwrite it?\n{fileName}\n"
+                )
+                if yn == "yes":
                     break
-                elif yn == 'no':
-                    raise Exception('stop')
+                elif yn == "no":
+                    raise Exception("stop")
                 else:
-                    print('only accept yes/no', flush=True)
-            if yn != 'yes':
-                raise Exception('stop')
+                    print("only accept yes/no", flush=True)
+            if yn != "yes":
+                raise Exception("stop")
 
     errorIfInvalidVarStruct(varStruct)
 
@@ -241,7 +267,7 @@ def save(
         dimnames = names[1:]
         dimvalues = values[1:]
 
-    with nc.Dataset(fileName, 'a') as h_file:
+    with nc.Dataset(fileName, "a") as h_file:
         # check name exists
         existed_names = list(h_file.variables.keys())
 
@@ -249,17 +275,28 @@ def save(
         for dimname, dimvalue in zip(dimnames, dimvalues):
             if dimname in existed_names:
                 if dimvalue.shape != h_file[dimname].shape:
-                    raise Exception(f'the dimension {
-                                    dimname} has different shape than in the existing file.\n{fileName}')
+                    raise Exception(
+                        f"the dimension {
+                            dimname
+                        } has different shape than in the existing file.\n{
+                            fileName
+                        }"
+                    )
 
         # check varaible exists
         if varName in existed_names:
             if varvalue.shape != h_file[varName].shape:
                 raise Exception(
-                    f'the variable {varName} has different shape than in the existing file.\n{fileName}')
+                    f"the variable {varName} has different shape than in the existing file.\n{fileName}"
+                )
             if dimnames != list(h_file[varName].dimensions):
-                raise Exception(f'the variable {
-                                varName} has different dimension names than in the existing file.\n{fileName}')
+                raise Exception(
+                    f"the variable {
+                        varName
+                    } has different dimension names than in the existing file.\n{
+                        fileName
+                    }"
+                )
 
         # create dimensions
         if len(dimnames) == 1 and dimnames[0] == varName:
@@ -272,13 +309,23 @@ def save(
             if name in dimnames:
                 h_file.createDimension(name, len(value))
                 h_file.createVariable(
-                    name, dtype, (name,), compression='zlib', complevel=complevel, shuffle=shuffle
+                    name,
+                    dtype,
+                    (name,),
+                    compression="zlib",
+                    complevel=complevel,
+                    shuffle=shuffle,
                 )
                 continue
             if name == varName:
                 h_file.createVariable(
-                    name, dtype, dimnames, significant_digits=significant_digits, 
-                    compression='zlib', complevel=complevel, shuffle=shuffle
+                    name,
+                    dtype,
+                    dimnames,
+                    significant_digits=significant_digits,
+                    compression="zlib",
+                    complevel=complevel,
+                    shuffle=shuffle,
                 )
                 continue
 
@@ -294,7 +341,7 @@ def save(
 
 
 def errorIfInvalidVarStruct(varStruct):
-    '''
+    """
     varStruct = {
       'variableName': variable,
       'dim0Name': dim0,
@@ -302,15 +349,15 @@ def errorIfInvalidVarStruct(varStruct):
       ...
       'dimNName': dimN,
     }
-    '''
+    """
 
     if not isinstance(varStruct, dict):
-        raise TypeError('varStruct must be of a dictionary type')
+        raise TypeError("varStruct must be of a dictionary type")
 
     values = list(varStruct.values())
     for pos, value in enumerate(values):
         if not chkt.isIterable(value):
-            raise TypeError(f'value at position {pos} is not iterable')
+            raise TypeError(f"value at position {pos} is not iterable")
 
     values = [np.array(v) for v in values]
 
@@ -322,8 +369,11 @@ def errorIfInvalidVarStruct(varStruct):
 
     # check consistency
     if var_shape != dim_shape:
-        raise ValueError(f'shape of (var) & (dim) are inconsistent: {
-            var_shape} & {dim_shape}')
+        raise ValueError(
+            f"shape of (var) & (dim) are inconsistent: {var_shape} & {
+                dim_shape
+            }"
+        )
 
     return True
 
@@ -331,28 +381,30 @@ def errorIfInvalidVarStruct(varStruct):
 def set_my_attrs(h_file, dimnames):
     for name in dimnames:
         h = h_file[name]
-        if name.lower() in ['lon', 'longitude']:
-            h.axis = 'X'
-            h.units = 'degrees_east'
-            h.long_name = 'longitude'
-            h.standard_name = 'longitude'
-        if name.lower() in ['lat', 'latitude']:
-            h.axis = 'Y'
-            h.units = 'degrees_north'
-            h.long_name = 'latitude'
-            h.standard_name = 'latitude'
-        if name.lower() in ['lev', 'level', 'plev']:
-            h.axis = 'Z'
+        if name.lower() in ["lon", "longitude"]:
+            h.axis = "X"
+            h.units = "degrees_east"
+            h.long_name = "longitude"
+            h.standard_name = "longitude"
+        if name.lower() in ["lat", "latitude"]:
+            h.axis = "Y"
+            h.units = "degrees_north"
+            h.long_name = "latitude"
+            h.standard_name = "latitude"
+        if name.lower() in ["lev", "level", "plev"]:
+            h.axis = "Z"
         if name.lower() in [
-            'time', 'valid_time', 'date', 'valid_date',
-            *[f'time{i}' for i in range(10)],
-            *[f'time_{i}' for i in range(10)],
+            "time",
+            "valid_time",
+            "date",
+            "valid_date",
+            *[f"time{i}" for i in range(10)],
+            *[f"time_{i}" for i in range(10)],
         ]:
-            h.axis = 'T'
-            h.units = 'days since 2000-01-01 00:00:00'
-            h.long_name = 'time'
-            h.standard_name = 'time'
-
+            h.axis = "T"
+            h.units = "days since 2000-01-01 00:00:00"
+            h.long_name = "time"
+            h.standard_name = "time"
 
 
 # def write(path, varName, value):
@@ -361,14 +413,15 @@ def set_my_attrs(h_file, dimnames):
 
 
 def ncwriteatt(path, varName, attName, attValue):
-    with nc.Dataset(path, 'a') as h_file:
-        if varName == '/':
+    with nc.Dataset(path, "a") as h_file:
+        if varName == "/":
             h_file.setncattr(attName, attValue)
         else:
             setattr(h_file[varName], attName, attValue)
 
+
 def write(fileName: str, varName: str, data, slices=None) -> str:
-    with nc.Dataset(fileName, 'a') as hFile:
+    with nc.Dataset(fileName, "a") as hFile:
         if slices is None:
             hFile[varName][:] = data
         else:
@@ -379,15 +432,15 @@ def read(fileName, varName):
     _errorIfFileNotExists(fileName)
     _errorIfVariableNotExists(fileName, varName)
     try:
-        with nc.Dataset(fileName, 'r') as h:
+        with nc.Dataset(fileName, "r") as h:
             data = h[varName][:]
             data = np.array(data)
     except RuntimeError as e:
         print(e)
-        raise RuntimeError(f'{fileName = }, {varName = }')
+        raise RuntimeError(f"{fileName = }, {varName = }")
     except Exception as e:
         print(e)
-        raise RuntimeError('')
+        raise RuntimeError("")
     return data
 
 
@@ -396,7 +449,7 @@ def getVarShape(fileName, varName):
         return None
     if varName not in getVarNames(fileName):
         return None
-    with nc.Dataset(fileName, 'r') as h:
+    with nc.Dataset(fileName, "r") as h:
         shape = h[varName].shape
     return shape
 
@@ -405,29 +458,31 @@ def getVarDimLength(fileName, varName, iDim):
     shape = getVarShape(fileName, varName)
     if shape is None:
         return 0
-    if len(shape)-1 < iDim:
+    if len(shape) - 1 < iDim:
         return 0
     return shape[iDim]
 
 
-def ncreadatt(fileName: str, varName: str, attName: str) -> str:
-    with nc.Dataset(fileName, 'r') as hFile:
-        if varName == '/':
+def ncreadatt(fileName: str, varName: str, attName: str) -> str | float:
+    with nc.Dataset(fileName, "r") as hFile:
+        if varName == "/":
             hVar = hFile
         else:
             hVar = hFile[varName]
-        
+
         try:
             attValue = hVar.getncattr(attName)
         except AttributeError:
-            raise AttributeError(f'failed to read attributes:\n  {fileName=}\n  {varName=}\n  attribute name "{attName}"')
+            raise AttributeError(
+                f'failed to read attributes:\n  {fileName=}\n  {varName=}\n  attribute name "{attName}"'
+            )
 
     return attValue
 
 
-def getAttNames(fileName:str, varName:str) -> list[str]:
-    with nc.Dataset(fileName, 'r') as hFile:
-        if varName == '/':
+def getAttNames(fileName: str, varName: str) -> list[str]:
+    with nc.Dataset(fileName, "r") as hFile:
+        if varName == "/":
             hVar = hFile
         else:
             hVar = hFile[varName]
@@ -436,65 +491,68 @@ def getAttNames(fileName:str, varName:str) -> list[str]:
 
 
 def ncreadtime(
-    fileName: str, varName: str = 'time', attName: str = 'units'
+    fileName: str, varName: str = "time", attName: str = "units"
 ) -> np.array:
-
     from . import timetools as tt
 
     timeValue = read(fileName, varName)
     timeUnits = ncreadatt(fileName, varName, attName).lower()
-    if 'calendar' in getAttNames(fileName, varName):
-        strCalendar = ncreadatt(fileName, varName, 'calendar')
+    if "calendar" in getAttNames(fileName, varName):
+        strCalendar = ncreadatt(fileName, varName, "calendar")
     else:
         strCalendar = None
 
-    if 'since' not in timeUnits:
-        raise ValueError(f'cannot find "since" in {timeUnits=} to parse. ({fileName=}, {varName=}, attName=)')
+    if "since" not in timeUnits:
+        raise ValueError(
+            f'cannot find "since" in {timeUnits=} to parse. ({fileName=}, {varName=}, attName=)'
+        )
 
     found = False
-    validDelimitters = [' ', '_']
+    validDelimitters = [" ", "_"]
     for delimitter in validDelimitters:
-        if timeUnits.split(delimitter)[1] == 'since':
+        if timeUnits.split(delimitter)[1] == "since":
             timeUnits = timeUnits.split(delimitter)
             found = True
             break
     if not found:
-        raise ValueError(f'unable to parse {timeUnits=}')
+        raise ValueError(f"unable to parse {timeUnits=}")
 
     strTimeDelta = timeUnits[0]
     strTimeOrigin = delimitter.join(timeUnits[2:])
 
     # weird origin time (CMIP6 models)
-    if strTimeOrigin == '1-1-1 00:00:00':
+    if strTimeOrigin == "1-1-1 00:00:00":
         timeOrigin = tt.ymd2float(1, 1, 1)
     else:
         timeOrigin = tt.string2float(strTimeOrigin)
 
     TIMEDELTA = {
-        'second': 1/86400,
-        'seconds': 1/86400,
-        'minute': 1/1440,
-        'minutes': 1/1440,
-        'hour': 1/24,
-        'hours': 1/24,
-        'day': 1,
-        'days': 1,
+        "second": 1 / 86400,
+        "seconds": 1 / 86400,
+        "minute": 1 / 1440,
+        "minutes": 1 / 1440,
+        "hour": 1 / 24,
+        "hours": 1 / 24,
+        "day": 1,
+        "days": 1,
     }
 
-    STRMONTH = ['month', 'months']
-    STRYEAR = ['year', 'years']
+    STRMONTH = ["month", "months"]
+    STRYEAR = ["year", "years"]
 
     if strTimeDelta not in [*TIMEDELTA.keys(), *STRMONTH, *STRYEAR]:
-        raise ValueError(f'unalbe to recognize {strTimeDelta=}')
+        raise ValueError(f"unalbe to recognize {strTimeDelta=}")
 
     if strTimeDelta in STRMONTH:
-        time = [tt.addMonth(timeOrigin, v) for v in timeValue]
+        time = [tt.addMonth(timeOrigin, int(v)) for v in timeValue]
     elif strTimeDelta in STRYEAR:
-        time = [tt.addMonth(timeOrigin, v*12) for v in timeValue]
+        time = [tt.addMonth(timeOrigin, v * 12) for v in timeValue]
     else:
         if strCalendar in [
-            '365_day', '365_days',
-            '360_day', '360_days',
+            "365_day",
+            "365_days",
+            "360_day",
+            "360_days",
         ]:
             daysPerYear = int(strCalendar[:3])
 
@@ -510,21 +568,19 @@ def ncreadtime(
 
                 t = tt.ymd2float(year, 1, 1) + remainder
                 # get rid of the extra day from Feb29
-                if (
-                    (isleap(year) and t >= tt.ymd2float(year, 2, 29))
-                    or (isleap(year+1) and t >= tt.ymd2float(year+1, 2, 29))
+                if (isleap(year) and t >= tt.ymd2float(year, 2, 29)) or (
+                    isleap(year + 1) and t >= tt.ymd2float(year + 1, 2, 29)
                 ):
                     t += 1
 
                 time.append(t)
         else:
-            time = [timeOrigin + v*TIMEDELTA[strTimeDelta] for v in timeValue]
+            time = [timeOrigin + v * TIMEDELTA[strTimeDelta] for v in timeValue]
 
     return np.array(time)
 
 
 def ncread(fileName: str, varName: str, slices: list[slice] = None) -> np.array:
-
     _errorIfVariableNotExists(fileName, varName)
 
     # ---- checking slices ---- #
@@ -532,21 +588,20 @@ def ncread(fileName: str, varName: str, slices: list[slice] = None) -> np.array:
         raise TypeError('"slices" must be the list type')
 
     if slices is not None:
-
         for s in slices:
             if not isinstance(s, slice):
                 raise TypeError('elements in "slices" must be the slice type.')
 
-        with nc.Dataset(fileName, 'r') as h:
+        with nc.Dataset(fileName, "r") as h:
             ndim = h[varName].ndim
         if len(slices) != ndim:
             raise ValueError(
-                f'The number of inquired dimensions (n={len(slices)}) '
-                f'are different from the file (n={ndim}).'
+                f"The number of inquired dimensions (n={len(slices)}) "
+                f"are different from the file (n={ndim})."
             )
 
     # ---- read file ---- #
-    with nc.Dataset(fileName, 'r') as h:
+    with nc.Dataset(fileName, "r") as h:
         if slices is None:
             data = h[varName][:]
         else:
@@ -556,20 +611,23 @@ def ncread(fileName: str, varName: str, slices: list[slice] = None) -> np.array:
 
 
 def ncreadByDimRange(
-    fileName: str, varName: str, minMaxs: list[list],
-    iDimT: int = None, decodeTime=True
+    fileName: str,
+    varName: str,
+    minMaxs: list[list],
+    iDimT: int = None,
+    decodeTime=True,
 ):
     from .caltools import value2Slice
 
     #
     # ---- check file can be opened
     _errorIfVariableNotExists(fileName, varName)
-    with nc.Dataset(fileName, 'r') as h:
+    with nc.Dataset(fileName, "r") as h:
         NDIM = h[varName].ndim
     dimNames = getDimNames(fileName, varName)
 
     #
-    # ---- checking input types 
+    # ---- checking input types
     if not isinstance(minMaxs, list):
         raise TypeError('"minMaxs" must be a list.')
 
@@ -582,8 +640,7 @@ def ncreadByDimRange(
             if minOrMax is None:
                 continue
             if not isinstance(minOrMax, (int, float)):
-                raise ValueError(
-                    'The min or Max in "minMaxs" must be a number')
+                raise ValueError('The min or Max in "minMaxs" must be a number')
 
     if not decodeTime and iDimT is not None:
         raise ValueError('"decodeTime" is false but "iDimT" is assigned.')
@@ -596,12 +653,14 @@ def ncreadByDimRange(
 
     if decodeTime not in [True, False]:
         raise ValueError('"decodeTime" only accepts "True" or "False".')
-    
+
     #
     # ---- check numDims
     numDims = len(dimNames)
     if len(minMaxs) != numDims:
-        raise ValueError(f'incorrect number ({len(minMaxs)}) of minMaxs, {dimNames=}')
+        raise ValueError(
+            f"incorrect number ({len(minMaxs)}) of minMaxs, {dimNames=}"
+        )
 
     #
     # ---- begins ---- #
@@ -613,9 +672,10 @@ def ncreadByDimRange(
         found = False
         dimNamesLower = [vn.lower() for vn in dimNames]
         for timeName in [
-            'time', 'valid_time',
-            *[f'time{i}' for i in range(10)],
-            *[f'time_{i}' for i in range(10)],
+            "time",
+            "valid_time",
+            *[f"time{i}" for i in range(10)],
+            *[f"time_{i}" for i in range(10)],
         ]:
             if timeName in dimNamesLower:
                 found, iDimT = True, dimNamesLower.index(timeName)
@@ -623,43 +683,43 @@ def ncreadByDimRange(
 
         if not found:
             raise ValueError(
-                f'unable to determine which one is time dimensions from {dimNames=}. '
+                f"unable to determine which one is time dimensions from {dimNames=}. "
                 f'Assign "iDimT" manually or set "decodeTime" to false.'
             )
-        
+
     #
     # ---- get slices for dimensions ---- #
     dimensions = [  # read dimensions
-        read(fileName, dimName) # general dimensions
+        read(fileName, dimName)  # general dimensions
         if (iDim != iDimT) or (not decodeTime)
-        else ncreadtime(fileName, dimName) # time dimension
+        else ncreadtime(fileName, dimName)  # time dimension
         for iDim, dimName in enumerate(dimNames)
     ]
 
-    dimensionsFlipped, dimsAreReversed = zip(*[ 
-        (dimension[::-1], True)  # reverse the dimension if decreasing
-        if dimension[0] > dimension[-1]
-        else (dimension, False)
-        for dimension in dimensions
-    ])
+    dimensionsFlipped, dimsAreReversed = zip(
+        *[
+            (dimension[::-1], True)  # reverse the dimension if decreasing
+            if dimension[0] > dimension[-1]
+            else (dimension, False)
+            for dimension in dimensions
+        ]
+    )
 
     try:
-        slicesFlipped = [ # determine the slice by minMaxs
+        slicesFlipped = [  # determine the slice by minMaxs
             value2Slice(dimension, *minMax)
             for dimension, minMax in zip(dimensionsFlipped, minMaxs)
         ]
     except Exception:
         traceback.print_exc()
-        raise RuntimeError(f'{fileName = }, {varName = }')
+        raise RuntimeError(f"{fileName = }, {varName = }")
 
     dimensionsFlipped = [
-        np.array(dim[sli]) 
-        for dim, sli in zip(dimensionsFlipped, slicesFlipped)
+        np.array(dim[sli]) for dim, sli in zip(dimensionsFlipped, slicesFlipped)
     ]
 
     slices = [  # reverse the slice if needed
-        slice(len(dim)-sli.stop, len(dim)-sli.start) 
-        if rev else sli
+        slice(len(dim) - sli.stop, len(dim) - sli.start) if rev else sli
         for sli, rev, dim in zip(slicesFlipped, dimsAreReversed, dimensions)
     ]
 
@@ -668,14 +728,16 @@ def ncreadByDimRange(
 
     # read variable
     try:
-        with nc.Dataset(fileName, 'r') as h:
+        with nc.Dataset(fileName, "r") as h:
             data = h[varName][slices]
 
     except Exception:
         traceback.print_exc()
-        raise RuntimeError(f'{fileName = }, {varName = }, {slices = }')
-    
+        raise RuntimeError(f"{fileName = }, {varName = }, {slices = }")
+
     data = np.array(data)
-    data = np.flip(data, axis=[iax for iax, rev in enumerate(dimsAreReversed) if rev])
+    data = np.flip(
+        data, axis=[iax for iax, rev in enumerate(dimsAreReversed) if rev]
+    )
 
     return data, dimensionsFlipped

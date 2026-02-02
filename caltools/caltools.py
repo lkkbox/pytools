@@ -1,19 +1,27 @@
 import numpy as np
 
-def inhomo_list_to_array(datas:list) -> np.ndarray:
+
+def skewness(data: np.ndarray, axis: int = 0) -> np.ndarray:
+    mean = np.nanmean(data, axis=axis)
+    std = np.nanstd(data, axis=axis)
+    skewness = np.nanmean(((data - mean) / std) ** 3, axis=axis)
+    return skewness
+
+
+def inhomo_list_to_array(datas: list) -> np.ndarray:
     shapes = [data.shape for data in datas]
-    max_shape = [max(shape[i] for shape in shapes) for i in range(len(shapes[0]))]
+    max_shape = [
+        max(shape[i] for shape in shapes) for i in range(len(shapes[0]))
+    ]
     num_cases = len(datas)
     new_shape = (num_cases, *max_shape)
     out_datas = np.nan * np.ones(new_shape)
 
     for icase, data in enumerate(datas):
-        slices = [
-            slice(icase, icase+1),
-            *[slice(0, s) for s in data.shape]
-        ]
+        slices = [slice(icase, icase + 1), *[slice(0, s) for s in data.shape]]
         out_datas[*slices] = data
     return out_datas
+
 
 def conform_axis(data1, data2, dims1, dims2, axis):
     dim1 = list(dims1[axis])
@@ -36,7 +44,7 @@ def conform_axis(data1, data2, dims1, dims2, axis):
     return data1, data2, dims1
 
 
-def centraldiff(data:np.ndarray, axis:int):
+def centraldiff(data: np.ndarray, axis: int):
     was1d = data.ndim == 1
     if was1d:
         data = data[:, None]
@@ -45,10 +53,10 @@ def centraldiff(data:np.ndarray, axis:int):
     data = np.concatenate(
         (
             (data[1, :] - data[0, :])[None, :],
-            (data[2:, :] - data[0:-2, :])/2,
-            (data[-1, :] - data[-2, :])[None, :]
+            (data[2:, :] - data[0:-2, :]) / 2,
+            (data[-1, :] - data[-2, :])[None, :],
         ),
-        axis=0 
+        axis=0,
     )
     data = np.swapaxes(data, 0, axis)
 
@@ -61,18 +69,21 @@ def nearest_nice_number(inputs, targets=None, round_decimal=6):
     if targets is None:
         targets = [1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 9, 10]
 
+    inputs = inputs[~np.isnan(inputs)]
+
     sign = np.sign(inputs)
     inputs = np.abs(inputs)
-    
+
     targets = np.array(targets)
     inputs = np.array(inputs)
 
     log_inputs = np.log10(inputs)
     powers, residuals = divmod(log_inputs, 1)
-    residuals = 10 ** residuals
+    residuals = 10**residuals
     indices = np.argmin(np.abs([r - targets for r in residuals]), axis=-1)
     outputs = [
-        round(targets[index] * 10 ** int(power), int(-power+round_decimal))
+        # bug: sometimes powers contain Nans..
+        round(targets[index] * 10 ** int(power), int(-power + round_decimal))
         for index, power in zip(indices, powers)
     ]
     outputs = outputs * sign
@@ -97,7 +108,6 @@ def fillNans2d(data, numSmooths, nsmooths=(3, 3), dims=(-1, -2)):
     for ix in range(data.shape[dims[0]]):
         smoothed[:, ix] = fill_nan_nearest(smoothed[:, ix])
 
-
     for i in range(numSmooths):
         smoothed = smooth(smoothed, nsmooths[0], dims[0])
         smoothed = smooth(smoothed, nsmooths[1], dims[1])
@@ -108,16 +118,22 @@ def fillNans2d(data, numSmooths, nsmooths=(3, 3), dims=(-1, -2)):
 
 def fill_nan_nearest(arr, axis=-1):
     from scipy import interpolate
+
     nans = np.isnan(arr)
     x = np.arange(len(arr))
-    f = interpolate.interp1d(x[~nans], arr[~nans], kind='nearest', 
-                             fill_value="extrapolate", axis=axis)
+    f = interpolate.interp1d(
+        x[~nans],
+        arr[~nans],
+        kind="nearest",
+        fill_value="extrapolate",
+        axis=axis,
+    )
     return f(x)
 
 
 def grid2weight_1d(grid):
     delta = np.diff(grid)
-    weight = [delta[0]/2, *((delta[:-1]+delta[1:])/2), delta[-1]/2]
+    weight = [delta[0] / 2, *((delta[:-1] + delta[1:]) / 2), delta[-1] / 2]
     return np.array(weight)
 
 
@@ -125,7 +141,7 @@ def bootstrapResampling(data, numSamples, axis=0):
     data = np.swapaxes(data, 0, axis)
     newData = np.nan * np.ones((numSamples, *data.shape[1:]))
     lenDim = data.shape[0]
-    indices = np.random.randint(0, lenDim, lenDim*numSamples)
+    indices = np.random.randint(0, lenDim, lenDim * numSamples)
     indices = np.reshape(indices, (numSamples, lenDim))
 
     if (data.ndim) > 1:
@@ -147,29 +163,30 @@ def bootstrapPR(data, numSamples, prs, axis=0):
 def bootstrapResampledDifferenceLevel(data1, data2, numSamples, axis=0):
     resampledData1 = bootstrapResampling(data1, numSamples, axis)
     resampledData2 = bootstrapResampling(data2, numSamples, axis)
-    return np.nansum((resampledData1 > resampledData2), axis)/numSamples
+    return np.nansum((resampledData1 > resampledData2), axis) / numSamples
 
 
 def bootstrapResampledDifferenceLevelConst(data1, const, numSamples, axis=0):
     resampledData1 = bootstrapResampling(data1, numSamples, axis)
-    return np.nansum((resampledData1 > const), axis)/numSamples
+    return np.nansum((resampledData1 > const), axis) / numSamples
 
 
 def smooth(dataArray, numSmooths, axis=0, **kwargs):
     from scipy.ndimage import uniform_filter1d
+
     isnan = np.isnan(dataArray)
     if not np.any(isnan):
         output = uniform_filter1d(
-            dataArray, numSmooths, axis, mode='nearest', **kwargs
+            dataArray, numSmooths, axis, mode="nearest", **kwargs
         )
         return output
 
     # deal with nans
     mean = np.nanmean(dataArray, keepdims=True, axis=axis)
     dataArray -= mean
-    dataArray[isnan] = 0.
+    dataArray[isnan] = 0.0
     output = uniform_filter1d(
-        dataArray, numSmooths, axis, mode='nearest', **kwargs
+        dataArray, numSmooths, axis, mode="nearest", **kwargs
     )
     output += mean
     output[isnan] = np.nan
@@ -178,10 +195,11 @@ def smooth(dataArray, numSmooths, axis=0, **kwargs):
 
 def nanSmooth(dataArray, numSmooths, axis=0, **kwargs):
     from scipy.ndimage import uniform_filter1d
+
     isnan = np.isnan(dataArray)
     dataArray[isnan] = 0
     dataArray = uniform_filter1d(
-        dataArray, numSmooths, axis, mode='nearest', **kwargs
+        dataArray, numSmooths, axis, mode="nearest", **kwargs
     )
     dataArray[isnan] = np.nan
     return dataArray
@@ -234,7 +252,8 @@ def w2g(LON, lon_s, lon_e):
 
     if len(indices) == 0:
         print(
-            f'[w2g] warning, no values are found, [xs, xe] = {lon_s, lon_e}, minMax(LON)=({np.min(LON)}, {np.max(LON)})')
+            f"[w2g] warning, no values are found, [xs, xe] = {lon_s, lon_e}, minMax(LON)=({np.min(LON)}, {np.max(LON)})"
+        )
         xs, xe = None, None
     elif len(indices) == 1:
         [xs, xe] = indices[[0, 0]]
@@ -261,7 +280,7 @@ def value2Slice(valueList, valueStart, valueEnd):
         if valueSmall >= valueBig:
             raise ValueError(
                 'values in "valueList" must be strictly increasing. '
-                f'({valueSmall=}, {valueBig=})'
+                f"({valueSmall=}, {valueBig=})"
             )
 
     if valueStart is None:
@@ -276,17 +295,17 @@ def value2Slice(valueList, valueStart, valueEnd):
 
     if valueStart > valueEnd:
         raise ValueError(
-            f'Inquiring with {valueStart=} > {valueEnd=} makes no sense.'
+            f"Inquiring with {valueStart=} > {valueEnd=} makes no sense."
         )
     if valueStart > valueList[-1]:
         raise ValueError(
             f'The inquired "valueStart" is larger than the entire list: '
-            f'{valueStart=} > {valueList[-1]=}'
+            f"{valueStart=} > {valueList[-1]=}"
         )
     if valueEnd < valueList[0]:
         raise ValueError(
             f'The inquired "valueEnd" is smaller than the entire list: '
-            f'{valueEnd=} < {valueList[0]=}'
+            f"{valueEnd=} < {valueList[0]=}"
         )
     # TODO: is the element numeric?
     # for e in valueList:
@@ -302,17 +321,19 @@ def value2Slice(valueList, valueStart, valueEnd):
         if value <= valueEnd:
             break
 
-    return slice(sliceStart, len(valueList)-reversedSliceEnd)
+    return slice(sliceStart, len(valueList) - reversedSliceEnd)
 
 
 def interp_1d(x, y, x_new, axis=0, extrapolate=False):
-    '''
+    """
     This function interpolates the nd-array y(x) to y(x_new)
     along the left-most axis.
-    x is an 1-d array, with the same length as the first dimension 
+    x is an 1-d array, with the same length as the first dimension
     of y.
-    '''
-    def strictly_increasing(L): return all(e1 < e2 for e1, e2 in zip(L, L[1:]))
+    """
+
+    def strictly_increasing(L):
+        return all(e1 < e2 for e1, e2 in zip(L, L[1:]))
 
     x = np.array(x, dtype=np.double)
     y = np.array(y, dtype=np.double)
@@ -324,21 +345,23 @@ def interp_1d(x, y, x_new, axis=0, extrapolate=False):
     if axis != 0:
         y = np.swapaxes(y, 0, axis)
     if x.ndim > 1:
-        raise Exception(f'x.ndim must be 1 but input is {x.ndim}')
+        raise Exception(f"x.ndim must be 1 but input is {x.ndim}")
     if x_new.ndim > 1:
-        raise Exception(f'x_new.ndim must be 1 but input is {x_new.ndim}')
+        raise Exception(f"x_new.ndim must be 1 but input is {x_new.ndim}")
     if len(x) != y.shape[0]:
-        raise Exception(f'len(x) must be the same as y.shape[0]')
+        raise Exception(f"len(x) must be the same as y.shape[0]")
     if not strictly_increasing(x):
-        raise Exception('x must be strictly increasing.')
+        raise Exception("x must be strictly increasing.")
     if not strictly_increasing(x_new):
-        raise Exception('x_new must be strictly increasing.')
+        raise Exception("x_new must be strictly increasing.")
     if not extrapolate and np.min(x_new) < np.min(x):
         raise Exception(
-            f'min(x_new) must >= min(x) but they are {np.min(x_new)}, {np.min(x)}')
+            f"min(x_new) must >= min(x) but they are {np.min(x_new)}, {np.min(x)}"
+        )
     if not extrapolate and np.max(x_new) > np.max(x):
         raise Exception(
-            f'max(x_new) must <= max(x) but they are {np.max(x_new)}, {np.max(x)}')
+            f"max(x_new) must <= max(x) but they are {np.max(x_new)}, {np.max(x)}"
+        )
 
     nx = len(x)
     nx_new = len(x_new)
@@ -364,12 +387,12 @@ def interp_1d(x, y, x_new, axis=0, extrapolate=False):
             ixl[ix_new] = ix
             continue
         if len(ix) and ix != 0:
-            ixl[ix_new] = ix-1
+            ixl[ix_new] = ix - 1
             continue
 
         # find the intersection
         ix = np.where(dx < 0)[0][0]
-        ixl[ix_new] = ix-1
+        ixl[ix_new] = ix - 1
 
     ixr = ixl + 1
 
@@ -379,9 +402,12 @@ def interp_1d(x, y, x_new, axis=0, extrapolate=False):
 
     y_new = np.tile(y_new, [1 for i in range(y.ndim)])  # for broadcasting
     if y_new.ndim != 1:
-        y_new = np.swapaxes(y_new, 0, y_new.ndim-1)  # for broadcasting
+        y_new = np.swapaxes(y_new, 0, y_new.ndim - 1)  # for broadcasting
 
-    y_new = y_new * (y[ixr, :] - y[ixl, :])
+    if y.ndim > 1:
+        y_new = y_new * (y[ixr, :] - y[ixl, :])
+    else:
+        y_new = y_new * (y[ixr] - y[ixl])
     y_new += y[ixl]
 
     if axis != 0:
@@ -391,7 +417,7 @@ def interp_1d(x, y, x_new, axis=0, extrapolate=False):
 
 def scores_2d(forecast, observation, lat):
     def rmse():
-        rmse = (forecast-observation)**2
+        rmse = (forecast - observation) ** 2
         rmse = np.nanmean(rmse, axis=(-1, -2), keepdims=True)
         rmse = np.sqrt(rmse)
         rmse = np.nanmean(rmse, axis=-3)
@@ -401,9 +427,8 @@ def scores_2d(forecast, observation, lat):
         up = forecast * observation
         up = np.nansum(up, axis=(-1, -2), keepdims=True)
         down = np.sqrt(np.nansum(forecast**2, axis=(-1, -2), keepdims=True))
-        down *= np.sqrt(np.nansum(observation**2,
-                        axis=(-1, -2), keepdims=True))
-        pcc = np.nanmean(up/down, axis=-3)
+        down *= np.sqrt(np.nansum(observation**2, axis=(-1, -2), keepdims=True))
+        pcc = np.nanmean(up / down, axis=-3)
         return np.squeeze(pcc)
 
     def acc2():
@@ -411,7 +436,7 @@ def scores_2d(forecast, observation, lat):
         up = np.nansum(up, axis=-3, keepdims=True)
         down = np.sqrt(np.nansum(forecast**2, axis=-3, keepdims=True))
         down *= np.sqrt(np.nansum(observation**2, axis=-3, keepdims=True))
-        acc = np.nanmean(up/down, axis=(-1, -2))
+        acc = np.nanmean(up / down, axis=(-1, -2))
         return np.squeeze(acc)
 
     weight = np.sqrt(np.cos(lat / 180 * np.pi))
@@ -431,12 +456,13 @@ def harmonicFitting(x, y, nHarmList, axis=0):
         x = np.array(x)
     x = np.squeeze(x)
     if x.ndim != 1:
-        raise ValueError(f'only support x.ndim = 1 but {x.shape=}')
+        raise ValueError(f"only support x.ndim = 1 but {x.shape=}")
     if not isinstance(y, np.ndarray):
         y = np.array(y)
     if x.size != y.shape[axis]:
         raise ValueError(
-            f'x ({x.size}) and y ({y.shape[axis]}) have inconsistent length at {axis=}')
+            f"x ({x.size}) and y ({y.shape[axis]}) have inconsistent length at {axis=}"
+        )
 
     # ===========================================
     # permute axes
@@ -461,15 +487,16 @@ def harmonicFitting(x, y, nHarmList, axis=0):
     return yHat
 
 
-def bandPassFilter(data, freq_low, freq_high, sampling_frequency=1, axis=0):
+def bandPassFilter(data, freq_low, freq_high, sampling_frequency=1.0, axis=0):
     data = np.swapaxes(data, axis, -1)
     # Perform FFT on the data
     fft_data = np.fft.fft(data, axis=-1)
-    frequencies = np.fft.fftfreq(data.shape[-1], 1/sampling_frequency)
+    frequencies = np.fft.fftfreq(data.shape[-1], 1 / sampling_frequency)
 
     # Create a frequency mask to keep only the frequencies within the band-pass range
     mask = (np.abs(frequencies) >= freq_low) & (
-        np.abs(frequencies) <= freq_high)
+        np.abs(frequencies) <= freq_high
+    )
 
     # Apply the mask to the FFT data
     filtered_fft_data = fft_data * mask
@@ -487,10 +514,7 @@ def smoothNans1d(data, axis):
     mask = np.isnan(data)
     smoothData = np.copy(data)
     smoothData[1:-1, :] = np.nanmean(
-        np.concatenate(
-            (data[None, :-2, :], data[None, 2:, :]), axis=0
-        ),
-        axis=0
+        np.concatenate((data[None, :-2, :], data[None, 2:, :]), axis=0), axis=0
     )
 
     data[mask] = smoothData[mask]

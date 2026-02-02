@@ -1,7 +1,7 @@
-import numpy  as np
+import numpy as np
 
 
-def lonlat2dxdy(lon: np.ndarray | list, lat:np.ndarray | list, R: int | float=6378_000) -> tuple[np.ndarray, np.ndarray]:
+def lonlat2dxdy(lon: np.ndarray | list, lat: np.ndarray | list, R: int | float = 6378_000) -> tuple[np.ndarray, np.ndarray]:
     '''
     calculates the zonal and meridional distances with 
         lon[ny, nx] (deg) or lon[nx]
@@ -53,7 +53,7 @@ def lonlat2dxdy(lon: np.ndarray | list, lat:np.ndarray | list, R: int | float=63
     return dx, dy
 
 
-def lonlat2area(lon: np.ndarray | list, lat:np.ndarray | list, R: int | float=6378_000):
+def lonlat2area(lon: np.ndarray | list, lat: np.ndarray | list, R: int | float = 6378_000):
     dx, dy = lonlat2dxdy(lon, lat, R)
     return dx * dy
 
@@ -73,10 +73,10 @@ def lonlat2xy(lon, lat):
 
 
 def uv2div(
-    u: np.ndarray, 
-    v: np.ndarray, 
-    lon: np.ndarray, 
-    lat: np.ndarray, 
+    u: np.ndarray,
+    v: np.ndarray,
+    lon: np.ndarray,
+    lat: np.ndarray,
     sumxy: bool = True,
     R: int | float = 6378_000,
 ) -> np.ndarray:
@@ -87,3 +87,90 @@ def uv2div(
         return udx + vdy
     else:
         return udx, vdy
+
+
+def points_in_polygon(
+    x_coords: np.ndarray,
+    y_coords: np.ndarray,
+    vertices: list[tuple[int | float, int | float]],
+):
+    """
+    Returns a 2D boolean array indicating whether grid points are inside a polygon.
+
+    Parameters
+    ----------
+    x_coords : (Nx,) array-like
+        X coordinates of grid
+    y_coords : (Ny,) array-like
+        Y coordinates of grid
+    vertices : list of (x, y)
+        Polygon vertices [(x0,y0), (x1,y1), ..., (xn,yn)]
+
+    Returns
+    -------
+    mask : (Ny, Nx) ndarray of bool
+        True where (x, y) lies inside or on the polygon boundary
+    """
+    if x_coords.ndim != y_coords.ndim:
+        raise ValueError(f'{x_coords.ndim=} but {y_coords.ndim=}')
+
+    if x_coords.ndim > 2:
+        raise ValueError(f'{x_coords.ndim=} is larger than 2')
+
+    if x_coords.ndim == 2 and x_coords.shape != y_coords.shape:
+        raise ValueError(f'{x_coords.shape=} but {y_coords.shape=}')
+
+    if x_coords.ndim == 1:
+        X, Y = np.meshgrid(x_coords, y_coords)
+    else:
+        X, Y = x_coords, y_coords
+
+    verts = np.asarray(vertices)
+
+    x = X.ravel()
+    y = Y.ravel()
+
+    xv = verts[:, 0]
+    yv = verts[:, 1]
+    n = len(verts)
+
+    inside = np.zeros_like(x, dtype=bool)
+
+    # Ray casting algorithm
+    j = n - 1
+    for i in range(n):
+        xi, yi = xv[i], yv[i]
+        xj, yj = xv[j], yv[j]
+
+        intersect = (
+            ((yi > y) != (yj > y)) &
+            (x < (xj - xi) * (y - yi) / (yj - yi + 1e-15) + xi)
+        )
+        inside ^= intersect
+        j = i
+
+    return inside.reshape(Y.shape)
+
+
+_pacificBndPoints = [
+    [240, 90],
+    [240, 50],
+    [260, 20],
+    [273, 15],
+    [278, 8.5],
+    [290, 8.5],
+    [290, -50],
+    [290, -90],
+    [150, -90],
+    [150, -50],
+    [143, -10],
+    [120, -7],
+    [105, 0],
+    [100, 10],
+    [100, 50],
+    [100, 90]
+]
+
+
+def is_in_pacific(lon: np.ndarray, lat: np.ndarray) -> np.ndarray[np.bool]:
+    return points_in_polygon(lon, lat, _pacificBndPoints)
