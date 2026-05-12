@@ -285,7 +285,8 @@ class Subplot:
 
     def create_ax(self, fig: Figure, iax: int) -> Axes:
         position = self.get_iax_position(iax)
-        ax = fig.add_subplot(position=position)
+        # ax = fig.add_subplot(position=position)
+        ax = fig.add_axes(position)
         self._register_axes(iax, ax, position)
         return ax
 
@@ -309,7 +310,8 @@ class Subplot:
         keepOtherPads: bool = True,
         """
         position = self.get_sided_position(iside, rdx, rdy, rxoffset, ryoffset)
-        ax = fig.add_subplot(position=position)
+        # ax = fig.add_subplot(position=position)
+        ax = fig.add_axes(position)
         iax = iside + self.nx * self.ny
         self._register_axes(iax, ax, position)
         return ax
@@ -373,9 +375,7 @@ class Subplot:
         return left + xoffset, bottom + yoffset, width, height
 
     @staticmethod
-    def _get_pads(
-        pads: float | tuple[float, ...], nPanels: int
-    ) -> tuple[float, ...]:
+    def _get_pads(pads: float | tuple[float, ...], nPanels: int) -> tuple[float, ...]:
         if isinstance(pads, (float, int)):
             return tuple([pads] * (nPanels - 1))
 

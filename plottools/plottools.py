@@ -164,7 +164,7 @@ def plotcoast(ax, color="grey", linewidth=0.5, linestyle="-", resolution="0p5"):
     return h_coast
 
 
-def titleCorner(ax, title, r_dy=0.01, cornerIndex=[0, 1], **kwargs):
+def titleCorner(ax, title, r_dy=0.025, cornerIndex=[0, 1], **kwargs):
     x = cornerIndex[0]
     y = cornerIndex[1] + r_dy
     ax.text(x, y, title, transform=ax.transAxes, **kwargs)

@@ -8,6 +8,7 @@ varStruct = {
 }
 """
 
+from pathlib import Path
 from calendar import isleap
 from . import checktools as chkt
 import netCDF4 as nc
@@ -26,7 +27,7 @@ def getVarNames(fileName: str) -> list:
     return varNames
 
 
-def getDimNames(fileName: str, varName: str) -> list:
+def getDimNames(fileName: str | Path, varName: str) -> list:
     with nc.Dataset(fileName, "r") as h:
         dimNames = list(h[varName].dimensions)
     return dimNames
@@ -611,7 +612,7 @@ def ncread(fileName: str, varName: str, slices: list[slice] = None) -> np.array:
 
 
 def ncreadByDimRange(
-    fileName: str,
+    fileName: str | Path,
     varName: str,
     minMaxs: list[list],
     iDimT: int = None,
