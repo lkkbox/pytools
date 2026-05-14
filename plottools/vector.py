@@ -1,3 +1,4 @@
+from functools import cache
 from matplotlib.lines import Line2D
 from matplotlib.text import Text
 from typing import Literal
@@ -28,7 +29,7 @@ def vector(
     u: Iterable | float,
     v: Iterable | float,
     config: VectorConfig = VectorConfig(),
-) -> tuple[Line2D, VectorConfig]:
+) -> tuple[list[Line2D], VectorConfig]:
     lineData = _get_line_data(ax, x, y, u, v, config)
 
     hLine = ax.plot(
@@ -54,7 +55,7 @@ def vector_reference(
     padText: float = 0.03,
     anchorShift: tuple[float, float] = (0, 0),
     showAxBnd: bool = False,  # for debugging
-) -> tuple[Line2D, Text, Axes]:
+) -> tuple[list[Line2D], Text, Axes]:
     # -- create the canvas to draw the reference vector
     ax = _create_ax(parentAx, anchor, quadrant, rdx, rdy, anchorShift)
 
@@ -89,10 +90,10 @@ def vector_reference(
     # -- turn off the boundaries
     if not showAxBnd:
         ax.set_axis_off()
-        ax.set_xticks([])  # ty: ignore
-        ax.set_xticks([])  # ty: ignore
+        ax.set_xticks([])
+        ax.set_xticks([])
 
-    return hText, hLine, ax
+    return hLine, hText, ax
 
 
 def _get_line_data(
@@ -110,41 +111,40 @@ def _get_line_data(
         config.scale = _guess_scale(x0, y0, dx, dy)
 
     if config.headLenMax is None:
-        config.headLenMax = (
-            config.rHeadLen / np.cos(config.headAngle / 180 * np.pi) / config.scale
+        config.headLenMax = _guess_headLenMax(
+            u, v, config.rHeadLen, config.headAngle, config.scale
         )
 
     if config.aspect is None:
         config.aspect = _get_aspect(ax)
 
-    # if config.aspect is None:
     angs = np.angle(dx + dy * 1j)
     amps = np.absolute(dx + dy * 1j)
     leftAngs = angs - (180 - config.headAngle) / 180 * np.pi
     rightAngs = angs + (180 - config.headAngle) / 180 * np.pi
 
-    bodyScales = amps / config.scale
-    headLengths = (
-        amps / config.scale * config.rHeadLen / np.cos(config.headAngle / 180 * np.pi)
+    bodyMults = amps / config.scale
+    deltaBody = bodyMults * np.array(
+        (
+            dx,
+            dy * config.aspect,
+        )
     )
+
+    bodyLengths = np.absolute(deltaBody[0] + deltaBody[1] * 1j)
+    headLengths = bodyLengths * config.rHeadLen / np.cos(config.headAngle / 180 * np.pi)
     headLengths[(headLengths > config.headLenMax)] = config.headLenMax
 
-    deltaBody = np.array(
+    deltaLeft = headLengths * np.array(
         (
-            bodyScales * dx,
-            bodyScales * dy * config.aspect,
+            np.cos(leftAngs),
+            np.sin(leftAngs) * config.aspect,
         )
     )
-    deltaLeft = np.array(
+    deltaRight = headLengths * np.array(
         (
-            headLengths * np.cos(leftAngs),
-            headLengths * np.sin(leftAngs) * config.aspect,
-        )
-    )
-    deltaRight = np.array(
-        (
-            headLengths * np.cos(rightAngs),
-            headLengths * np.sin(rightAngs) * config.aspect,
+            np.cos(rightAngs),
+            np.sin(rightAngs) * config.aspect,
         )
     )
 
@@ -187,8 +187,8 @@ def _get_line_data(
 
 
 def _get_aspect(ax: Axes) -> float:
-    if ax.get_autoscalex_on() or ax.get_autoscaley_on():  # ty: ignore
-        raise NotImplementedError("xlim and ylim must be set before drawing")
+    if ax.get_autoscalex_on() or ax.get_autoscaley_on():
+        raise NotImplementedError("xlim and ylim must be set to get the correct aspect")
 
     xfig, yfig = ax.figure.get_size_inches()  # ty: ignore
     axBox = ax.get_position()
@@ -244,7 +244,7 @@ def _create_ax(
         x0 = xa
         y0 = ya - dy
 
-    newax = ax.figure.add_axes(  # ty: ignore
+    newax = ax.figure.add_axes(
         (
             x0 + anchorShift[0] * dx,
             y0 + anchorShift[1] * dy,
@@ -280,12 +280,14 @@ def _handle_dimensinons(
     if u.ndim != v.ndim:
         raise ValueError(f"ndim(u, v) must equal but found {(u.ndim, v.ndim)} ")
 
-    assert x.shape == y.shape
+    if x.ndim == 2:
+        assert x.shape == y.shape
+
     assert u.shape == v.shape
 
     if (x.ndim, u.ndim) == (1, 2):
         assert u.shape == (len(y), len(x))
-        y, x = np.meshgrid(y, x)
+        x, y = np.meshgrid(x, y)
         x = x.ravel()[::skip]
         y = y.ravel()[::skip]
         u = u.ravel()[::skip]
@@ -314,7 +316,7 @@ def _handle_dimensinons(
 
 def _guess_scale(x, y, u, v) -> float:
     MAGIC_NUM = 1.2
-    amp = np.sqrt(np.nanmax(u**2 + v**2))
+    amp = _get_characteristic_amp(u, v)
 
     # estimate the density of vectors
     dx = np.nanmax(x) - np.nanmin(x)
@@ -331,3 +333,14 @@ def _guess_scale(x, y, u, v) -> float:
     density = np.sqrt(len(u) / dxdy)
 
     return density * amp * MAGIC_NUM
+
+
+def _guess_headLenMax(u, v, rHeadLen, headAngle, scale) -> float:
+    amp = _get_characteristic_amp(u, v)
+    # divided by the cosine for tilting, and multiplied by the characteristic amplitude
+    return rHeadLen / np.cos(headAngle / 180 * np.pi) * amp / scale
+
+
+def _get_characteristic_amp(u, v) -> float:
+    MAGIC_PERCENTILE = 80
+    return np.sqrt(np.nanpercentile(u**2 + v**2, MAGIC_PERCENTILE))
