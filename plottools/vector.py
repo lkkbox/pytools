@@ -1,8 +1,9 @@
 from matplotlib.lines import Line2D
+from matplotlib.text import Text
 from typing import Literal
 from matplotlib.axes import Axes
 import numpy as np
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Iterable
 from copy import copy
 
@@ -16,6 +17,8 @@ class VectorConfig:
     rHeadLen: float = 0.3  # normalized 0-1: 1 is as long as the vector body
     headLenMax: float | None = None
     skip: int = 1
+    args: tuple = field(default_factory=tuple)
+    kwargs: dict = field(default_factory=dict)
 
 
 def vector(
@@ -25,14 +28,86 @@ def vector(
     u: Iterable | float,
     v: Iterable | float,
     config: VectorConfig = VectorConfig(),
-    *args,
-    **kwargs,
 ) -> tuple[Line2D, VectorConfig]:
+    lineData = _get_line_data(ax, x, y, u, v, config)
+
+    hLine = ax.plot(
+        lineData[0].ravel(),
+        lineData[1].ravel(),
+        *config.args,
+        **config.kwargs,
+    )
+
+    return hLine, config
+
+
+def vector_reference(
+    config: VectorConfig,
+    parentAx: Axes,
+    anchor: Literal["tr", "tl", "br", "bl"],
+    quadrant: Literal[1, 2, 3, 4],
+    rdx: float,
+    rdy: float,
+    magnitude: float,
+    text: str = "",
+    padStart: float = 0.0,  # padding units = axes width
+    padText: float = 0.03,
+    anchorShift: tuple[float, float] = (0, 0),
+    showAxBnd: bool = False,  # for debugging
+) -> tuple[Line2D, Text, Axes]:
+    # -- create the canvas to draw the reference vector
+    ax = _create_ax(parentAx, anchor, quadrant, rdx, rdy, anchorShift)
+
+    # -- set the axis limits
+    parentXlim = parentAx.get_xlim()
+    parentYlim = parentAx.get_ylim()
+    dx = (parentXlim[1] - parentXlim[0]) * rdx
+    dy = (parentYlim[1] - parentYlim[0]) * rdy
+    ax.set_xlim(0, dx)
+    ax.set_ylim(0, dy)
+
+    # -- draw the vector
+    config = copy(config)
+    config.pivot = "tail"  # you must force the start point
+    x = padStart * dx
+    y = dy / 2
+    u = magnitude
+    v = 0
+    lineData = _get_line_data(ax, x, y, u, v, config)
+    hLine = ax.plot(
+        lineData[0].ravel(),
+        lineData[1].ravel(),
+        *config.args,
+        **config.kwargs,
+    )
+
+    # -- start of text = max(line_x) + padText
+    xText = np.nanmax(lineData[0]) + padText * dx
+    yText = dy / 2
+    hText = ax.text(xText, yText, text, va="center", ha="left")
+
+    # -- turn off the boundaries
+    if not showAxBnd:
+        ax.set_axis_off()
+        ax.set_xticks([])  # ty: ignore
+        ax.set_xticks([])  # ty: ignore
+
+    return hText, hLine, ax
+
+
+def _get_line_data(
+    ax: Axes,
+    x: Iterable | float,
+    y: Iterable | float,
+    u: Iterable | float,
+    v: Iterable | float,
+    config: VectorConfig = VectorConfig(),
+) -> np.ndarray:
     x0, y0, dx, dy = _handle_dimensinons(x, y, u, v, config.skip)
 
     # change the default parameters from None to the estimation
     if config.scale is None:
-        config.scale = guess_scale(x0, y0, dx, dy)
+        config.scale = _guess_scale(x0, y0, dx, dy)
 
     if config.headLenMax is None:
         config.headLenMax = (
@@ -103,74 +178,12 @@ def vector(
         ),
         axis=0,
     )
+
+    # swap the dimension to [x/y, gridPoints, arrowPoints]
     data = np.swapaxes(data, 0, 1)
     data = np.swapaxes(data, 1, 2)
 
-    hPlot = ax.plot(
-        data[0].ravel(),
-        data[1].ravel(),
-        *args,
-        **kwargs,
-    )
-
-    return hPlot, config
-
-
-def guess_scale(x, y, u, v) -> float:
-    MAGIC_NUM = 1.2
-    amp = np.sqrt(np.nanmax(u**2 + v**2))
-
-    # estimate the density of vectors
-    dx = np.nanmax(x) - np.nanmin(x)
-    dy = np.nanmax(y) - np.nanmin(y)
-    if dx == 0 and dy == 0:
-        dxdy = 1
-    elif dx == 0:
-        dxdy = dy
-    elif dy == 0:
-        dxdy = dx
-    else:
-        dxdy = dx * dy
-
-    density = np.sqrt(len(u) / dxdy)
-
-    return density * amp * MAGIC_NUM
-
-
-def vector_example(
-    config: VectorConfig,
-    parentAx: Axes,
-    anchor: Literal["tr", "tl", "br", "bl"],
-    quadrant: Literal[1, 2, 3, 4],
-    rdx: float,
-    rdy: float,
-    magnitude: float,
-    text: str,
-    padStart: float = 0.1,
-    padText: float = 0.1,
-):
-    ax = create_ax(parentAx, anchor, quadrant, rdx, rdy)
-
-    parentXlim = parentAx.get_xlim()
-    parentYlim = parentAx.get_ylim()
-
-    dx = (parentXlim[1] - parentXlim[0]) * rdx
-    dy = (parentYlim[1] - parentYlim[0]) * rdy
-    ax.set_xlim(0, dx)
-    ax.set_ylim(0, dy)
-
-    x = padStart * dx
-    y = dy / 2
-    u = magnitude
-    v = 0
-
-    config = copy(config)
-    config.pivot = "tail"
-
-    print(x, y, u, v)
-    print(config.scale, config.aspect)
-    vector(ax, x, y, u, v, config)
-    print(config.scale, config.aspect)
+    return data
 
 
 def _get_aspect(ax: Axes) -> float:
@@ -193,12 +206,13 @@ def _get_aspect(ax: Axes) -> float:
     return xapparent / yapparent
 
 
-def create_ax(
+def _create_ax(
     ax: Axes,
     anchor: Literal["tr", "tl", "br", "bl"],
     quadrant: Literal[1, 2, 3, 4],
     rdx: float,
     rdy: float,
+    anchorShift: tuple[float, float],  # units: relative to the new axes
 ) -> Axes:
     if anchor not in ("tr", "tl", "br", "bl"):
         raise ValueError(f"unrecognized {anchor=}")
@@ -230,7 +244,14 @@ def create_ax(
         x0 = xa
         y0 = ya - dy
 
-    newax = ax.figure.add_axes((x0, y0, dx, dy))  # ty: ignore
+    newax = ax.figure.add_axes(  # ty: ignore
+        (
+            x0 + anchorShift[0] * dx,
+            y0 + anchorShift[1] * dy,
+            dx,
+            dy,
+        )
+    )
     return newax
 
 
@@ -289,3 +310,24 @@ def _handle_dimensinons(
     raise NotImplementedError(
         f"unable to handle ndim(x, y, u, v) = {(x.ndim, y.ndim, u.ndim, v.ndim)}"
     )
+
+
+def _guess_scale(x, y, u, v) -> float:
+    MAGIC_NUM = 1.2
+    amp = np.sqrt(np.nanmax(u**2 + v**2))
+
+    # estimate the density of vectors
+    dx = np.nanmax(x) - np.nanmin(x)
+    dy = np.nanmax(y) - np.nanmin(y)
+    if dx == 0 and dy == 0:
+        dxdy = 1
+    elif dx == 0:
+        dxdy = dy
+    elif dy == 0:
+        dxdy = dx
+    else:
+        dxdy = dx * dy
+
+    density = np.sqrt(len(u) / dxdy)
+
+    return density * amp * MAGIC_NUM
