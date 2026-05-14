@@ -1,16 +1,18 @@
 import numpy as np
 
 
-def lonlat2dxdy(lon: np.ndarray | list, lat: np.ndarray | list, R: int | float = 6378_000) -> tuple[np.ndarray, np.ndarray]:
-    '''
-    calculates the zonal and meridional distances with 
+def lonlat2dxdy(
+    lon: np.ndarray | list, lat: np.ndarray | list, R: int | float = 6378_000
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    calculates the zonal and meridional distances with
         lon[ny, nx] (deg) or lon[nx]
         lat[ny, nx] (deg)    lat[ny]
         R as radius
 
-    returns 
+    returns
         dx[ny, nx], dy[ny, nx]
-    '''
+    """
     #
     # ---- check inputs
     if isinstance(lon, (int, list)):
@@ -20,11 +22,11 @@ def lonlat2dxdy(lon: np.ndarray | list, lat: np.ndarray | list, R: int | float =
         lat = np.array(lat)
 
     if not (
-        (lon.ndim == lat.ndim and lon.ndim in [1, 2]) or
-        (lon.ndim == 0 and lat.ndim == 1) or
-        (lat.ndim == 0 and lon.ndim == 1)
+        (lon.ndim == lat.ndim and lon.ndim in [1, 2])
+        or (lon.ndim == 0 and lat.ndim == 1)
+        or (lat.ndim == 0 and lon.ndim == 1)
     ):
-        raise ValueError(f'input lon and lat must have 1 or 2d')
+        raise ValueError(f"input lon and lat must have 1 or 2d")
 
     #
     # ---- deg to rad
@@ -53,7 +55,9 @@ def lonlat2dxdy(lon: np.ndarray | list, lat: np.ndarray | list, R: int | float =
     return dx, dy
 
 
-def lonlat2area(lon: np.ndarray | list, lat: np.ndarray | list, R: int | float = 6378_000):
+def lonlat2area(
+    lon: np.ndarray | list, lat: np.ndarray | list, R: int | float = 6378_000
+):
     dx, dy = lonlat2dxdy(lon, lat, R)
     return dx * dy
 
@@ -112,13 +116,13 @@ def points_in_polygon(
         True where (x, y) lies inside or on the polygon boundary
     """
     if x_coords.ndim != y_coords.ndim:
-        raise ValueError(f'{x_coords.ndim=} but {y_coords.ndim=}')
+        raise ValueError(f"{x_coords.ndim=} but {y_coords.ndim=}")
 
     if x_coords.ndim > 2:
-        raise ValueError(f'{x_coords.ndim=} is larger than 2')
+        raise ValueError(f"{x_coords.ndim=} is larger than 2")
 
     if x_coords.ndim == 2 and x_coords.shape != y_coords.shape:
-        raise ValueError(f'{x_coords.shape=} but {y_coords.shape=}')
+        raise ValueError(f"{x_coords.shape=} but {y_coords.shape=}")
 
     if x_coords.ndim == 1:
         X, Y = np.meshgrid(x_coords, y_coords)
@@ -142,9 +146,8 @@ def points_in_polygon(
         xi, yi = xv[i], yv[i]
         xj, yj = xv[j], yv[j]
 
-        intersect = (
-            ((yi > y) != (yj > y)) &
-            (x < (xj - xi) * (y - yi) / (yj - yi + 1e-15) + xi)
+        intersect = ((yi > y) != (yj > y)) & (
+            x < (xj - xi) * (y - yi) / (yj - yi + 1e-15) + xi
         )
         inside ^= intersect
         j = i
@@ -168,9 +171,9 @@ _pacificBndPoints = [
     [105, 0],
     [100, 10],
     [100, 50],
-    [100, 90]
+    [100, 90],
 ]
 
 
-def is_in_pacific(lon: np.ndarray, lat: np.ndarray) -> np.ndarray[np.bool]:
+def is_in_pacific(lon: np.ndarray, lat: np.ndarray) -> np.ndarray:
     return points_in_polygon(lon, lat, _pacificBndPoints)
