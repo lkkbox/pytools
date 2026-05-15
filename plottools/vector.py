@@ -16,9 +16,17 @@ class VectorConfig:
     rHeadLen: float = 0.3  # normalized 0-1: 1 is as long as the vector body
     headLenMax: float | None = None
     skip: int = 1
+    direction: Literal["screen", "xy"] = "screen"
     args: tuple = field(default_factory=tuple)
     kwargs: dict = field(default_factory=dict)
     _aspect: float = field(init=False)  # ax ylim / xlim
+
+    def __post_init__(self) -> None:
+        if self.pivot not in ("tail", "center", "middle", "head"):
+            raise NotImplementedError(f"{self.pivot=}")
+
+        if self.direction not in ("screen", "xy"):
+            raise NotImplementedError(f"{self.direction=}")
 
 
 def vector(
@@ -118,22 +126,29 @@ def _get_line_data(
             dx, dy, config.rHeadLen, config.headAngle, config.scale
         )
 
-    amps = np.absolute(dx + dy * 1j)
-    angs = np.angle(dx + dy * 1j)
+    if config.direction == "screen":
+        bodyAspect = config._aspect
+    elif config.direction == "xy":
+        bodyAspect = 1
 
-    bodyMults = 1 / config.scale
-    deltaBody = bodyMults * np.array(
+    rScale = 1 / config.scale
+
+    # body
+    deltaBody = rScale * np.array(
         (
             dx,
-            dy * config._aspect,
+            dy * bodyAspect,
         )
     )
+
+    pseudoBody = deltaBody[0] + deltaBody[1] / config._aspect * 1j
+    angs = np.angle(pseudoBody)
+    amps = np.absolute(pseudoBody)
 
     leftAngs = angs - (180 - config.headAngle) / 180 * np.pi
     rightAngs = angs + (180 - config.headAngle) / 180 * np.pi
 
-    bodyLengths = np.absolute(deltaBody[0] + deltaBody[1] * 1j)
-    headLengths = bodyLengths * config.rHeadLen / np.cos(config.headAngle / 180 * np.pi)
+    headLengths = amps * config.rHeadLen / np.cos(config.headAngle / 180 * np.pi)
     headLengths[(headLengths > config.headLenMax)] = config.headLenMax
 
     deltaLeft = headLengths * np.array(
@@ -343,5 +358,5 @@ def _guess_headLenMax(u, v, rHeadLen, headAngle, scale) -> float:
 
 
 def _get_characteristic_amp(u, v) -> float:
-    MAGIC_PERCENTILE = 80
+    MAGIC_PERCENTILE = 50
     return np.sqrt(np.nanpercentile(u**2 + v**2, MAGIC_PERCENTILE))
