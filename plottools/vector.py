@@ -1,4 +1,3 @@
-from functools import cache
 from matplotlib.lines import Line2D
 from matplotlib.text import Text
 from typing import Literal
@@ -14,12 +13,12 @@ class VectorConfig:
     scale: float | None = None
     headAngle: float = 40  # degree
     pivot: Literal["tail", "center", "middle", "head"] = "tail"
-    aspect: float | None = None  # ax ylim / xlim
     rHeadLen: float = 0.3  # normalized 0-1: 1 is as long as the vector body
     headLenMax: float | None = None
     skip: int = 1
     args: tuple = field(default_factory=tuple)
     kwargs: dict = field(default_factory=dict)
+    _aspect: float = field(init=False)  # ax ylim / xlim
 
 
 def vector(
@@ -31,6 +30,7 @@ def vector(
     config: VectorConfig = VectorConfig(),
 ) -> tuple[list[Line2D], VectorConfig]:
     lineData = _get_line_data(ax, x, y, u, v, config)
+    del x, y, u, v
 
     hLine = ax.plot(
         lineData[0].ravel(),
@@ -105,31 +105,32 @@ def _get_line_data(
     config: VectorConfig = VectorConfig(),
 ) -> np.ndarray:
     x0, y0, dx, dy = _handle_dimensinons(x, y, u, v, config.skip)
+    del x, y, u, v
 
     # change the default parameters from None to the estimation
+    config._aspect = _get_aspect(ax)
+
     if config.scale is None:
         config.scale = _guess_scale(x0, y0, dx, dy)
 
     if config.headLenMax is None:
         config.headLenMax = _guess_headLenMax(
-            u, v, config.rHeadLen, config.headAngle, config.scale
+            dx, dy, config.rHeadLen, config.headAngle, config.scale
         )
 
-    if config.aspect is None:
-        config.aspect = _get_aspect(ax)
-
-    angs = np.angle(dx + dy * 1j)
     amps = np.absolute(dx + dy * 1j)
-    leftAngs = angs - (180 - config.headAngle) / 180 * np.pi
-    rightAngs = angs + (180 - config.headAngle) / 180 * np.pi
+    angs = np.angle(dx + dy * 1j)
 
-    bodyMults = amps / config.scale
+    bodyMults = 1 / config.scale
     deltaBody = bodyMults * np.array(
         (
             dx,
-            dy * config.aspect,
+            dy * config._aspect,
         )
     )
+
+    leftAngs = angs - (180 - config.headAngle) / 180 * np.pi
+    rightAngs = angs + (180 - config.headAngle) / 180 * np.pi
 
     bodyLengths = np.absolute(deltaBody[0] + deltaBody[1] * 1j)
     headLengths = bodyLengths * config.rHeadLen / np.cos(config.headAngle / 180 * np.pi)
@@ -138,13 +139,13 @@ def _get_line_data(
     deltaLeft = headLengths * np.array(
         (
             np.cos(leftAngs),
-            np.sin(leftAngs) * config.aspect,
+            np.sin(leftAngs) * config._aspect,
         )
     )
     deltaRight = headLengths * np.array(
         (
             np.cos(rightAngs),
-            np.sin(rightAngs) * config.aspect,
+            np.sin(rightAngs) * config._aspect,
         )
     )
 
