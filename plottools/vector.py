@@ -118,18 +118,18 @@ def _get_line_data(
     # change the default parameters from None to the estimation
     config._aspect = _get_aspect(ax)
 
+    if config.direction == "screen":
+        bodyAspect = config._aspect
+    elif config.direction == "xy":
+        bodyAspect = 1
+
     if config.scale is None:
-        config.scale = _guess_scale(x0, y0, dx, dy)
+        config.scale = _guess_scale(x0, y0, dx, dy * bodyAspect)
 
     if config.headLenMax is None:
         config.headLenMax = _guess_headLenMax(
             dx, dy, config.rHeadLen, config.headAngle, config.scale
         )
-
-    if config.direction == "screen":
-        bodyAspect = config._aspect
-    elif config.direction == "xy":
-        bodyAspect = 1
 
     rScale = 1 / config.scale
 
