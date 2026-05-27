@@ -62,10 +62,13 @@ def _get_ncl_cmap_colors(name: str, n: int) -> list[tuple[float, ...]]:
     hsv0 = [colorsys.rgb_to_hsv(r, g, b) for r, g, b in rgb0]
 
     x = np.linspace(0, 1, n)
-    x0 = np.linspace(0, 1, len(hsv0))
+    x0 = np.linspace(0, 1, len(rgb0))
 
-    hsv = interp_1d(x0, hsv0, x)
-    return [colorsys.hsv_to_rgb(h, s, v) for h, s, v in hsv]
+    # hsv = interp_1d(x0, hsv0, x)
+    # return [colorsys.hsv_to_rgb(h, s, v) for h, s, v in hsv]
+
+    rgb = interp_1d(x0, rgb0, x)
+    return rgb
 
 
 def _read_ncl_cmap_file(fileName) -> list[tuple[float, ...]]:
@@ -78,7 +81,7 @@ def _read_ncl_cmap_file(fileName) -> list[tuple[float, ...]]:
         numbers = line.split()
         numbers = [float(number) for number in numbers]
 
-        if len(numbers) != 3:  # r, g, b
+        if len(numbers) not in (3, 4):  # r, g, b
             return invalid
 
         if any([number > 255 for number in numbers]) or any(
@@ -104,6 +107,16 @@ def _read_ncl_cmap_file(fileName) -> list[tuple[float, ...]]:
             continue
         rgbList.append(tuple(numbers))
 
+    is255 = False
+    for rgb in rgbList:
+        for value in rgb:
+            if value > 1:
+                is255 = True
+                break
+
+    if is255:
+        rgbList = [tuple(value / 255 for value in rgb) for rgb in rgbList]
+
     return rgbList
 
 
@@ -112,7 +125,8 @@ def get_cmap_colors(name: str, n: int) -> list[tuple[float, ...]]:
         return _get_mpl_cmap_colors(name, n)
 
     elif name in _CMAP_NAMES_NCL:
-        return _get_ncl_cmap_colors(name, n)
+        colors = _get_ncl_cmap_colors(name, n)
+        return colors
 
     else:
         print("valid names:")
