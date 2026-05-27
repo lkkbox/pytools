@@ -4,7 +4,7 @@ from typing import Literal
 
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
-from .shading import contourf2
+from .shading import contourf
 
 fourFloats: TypeAlias = tuple[float, float, float, float]
 
@@ -39,14 +39,13 @@ def draw_colorbar(
         x, y = y, x
         z = list(zip(*z))
 
-    contourf2(
+    contourf(
         ax,
         x,
         y,
         z,
         levels,
         cmap,
-        plotColorbar=False,
     )
 
     ax.set_xlim(x[0], x[-1])
@@ -229,7 +228,7 @@ class Subplot:
         self.axes.update({iax: (ax, position)})
 
     def restore_positions(self) -> None:
-        for iax, (ax, position) in self.axes.items():
+        for __, (ax, position) in self.axes.items():
             ax.set_position(position)
 
     def draw_colorbar(
@@ -285,7 +284,6 @@ class Subplot:
 
     def create_ax(self, fig: Figure, iax: int) -> Axes:
         position = self.get_iax_position(iax)
-        # ax = fig.add_subplot(position=position)
         ax = fig.add_axes(position)
         self._register_axes(iax, ax, position)
         return ax

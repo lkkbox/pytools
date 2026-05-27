@@ -10,9 +10,7 @@ def skewness(data: np.ndarray, axis: int = 0) -> np.ndarray:
 
 def inhomo_list_to_array(datas: list) -> np.ndarray:
     shapes = [data.shape for data in datas]
-    max_shape = [
-        max(shape[i] for shape in shapes) for i in range(len(shapes[0]))
-    ]
+    max_shape = [max(shape[i] for shape in shapes) for i in range(len(shapes[0]))]
     num_cases = len(datas)
     new_shape = (num_cases, *max_shape)
     out_datas = np.nan * np.ones(new_shape)
@@ -176,18 +174,14 @@ def smooth(dataArray, numSmooths, axis=0, **kwargs):
 
     isnan = np.isnan(dataArray)
     if not np.any(isnan):
-        output = uniform_filter1d(
-            dataArray, numSmooths, axis, mode="nearest", **kwargs
-        )
+        output = uniform_filter1d(dataArray, numSmooths, axis, mode="nearest", **kwargs)
         return output
 
     # deal with nans
     mean = np.nanmean(dataArray, keepdims=True, axis=axis)
     dataArray -= mean
     dataArray[isnan] = 0.0
-    output = uniform_filter1d(
-        dataArray, numSmooths, axis, mode="nearest", **kwargs
-    )
+    output = uniform_filter1d(dataArray, numSmooths, axis, mode="nearest", **kwargs)
     output += mean
     output[isnan] = np.nan
     return output
@@ -198,9 +192,7 @@ def nanSmooth(dataArray, numSmooths, axis=0, **kwargs):
 
     isnan = np.isnan(dataArray)
     dataArray[isnan] = 0
-    dataArray = uniform_filter1d(
-        dataArray, numSmooths, axis, mode="nearest", **kwargs
-    )
+    dataArray = uniform_filter1d(dataArray, numSmooths, axis, mode="nearest", **kwargs)
     dataArray[isnan] = np.nan
     return dataArray
 
@@ -294,9 +286,7 @@ def value2Slice(valueList, valueStart, valueEnd):
         raise TypeError('"valueEnd" must be an integer of float')
 
     if valueStart > valueEnd:
-        raise ValueError(
-            f"Inquiring with {valueStart=} > {valueEnd=} makes no sense."
-        )
+        raise ValueError(f"Inquiring with {valueStart=} > {valueEnd=} makes no sense.")
     if valueStart > valueList[-1]:
         raise ValueError(
             f'The inquired "valueStart" is larger than the entire list: '
@@ -349,7 +339,7 @@ def interp_1d(x, y, x_new, axis=0, extrapolate=False):
     if x_new.ndim > 1:
         raise Exception(f"x_new.ndim must be 1 but input is {x_new.ndim}")
     if len(x) != y.shape[0]:
-        raise Exception(f"len(x) must be the same as y.shape[0]")
+        raise Exception("len(x) must be the same as y.shape[0]")
     if not strictly_increasing(x):
         raise Exception("x must be strictly increasing.")
     if not strictly_increasing(x_new):
@@ -368,7 +358,6 @@ def interp_1d(x, y, x_new, axis=0, extrapolate=False):
 
     # find index of x to interpolate
     ixl = np.zeros((nx_new,), dtype=np.int32)
-    ixr = np.zeros((nx_new,), dtype=np.int32)
 
     for ix_new in range(nx_new):
         dx = np.array(x_new[ix_new] - x)
@@ -400,7 +389,7 @@ def interp_1d(x, y, x_new, axis=0, extrapolate=False):
     y_new = x_new - x[ixl]
     y_new /= x[ixr] - x[ixl]
 
-    y_new = np.tile(y_new, [1 for i in range(y.ndim)])  # for broadcasting
+    y_new = np.tile(y_new, [1 for __ in range(y.ndim)])  # for broadcasting
     if y_new.ndim != 1:
         y_new = np.swapaxes(y_new, 0, y_new.ndim - 1)  # for broadcasting
 
@@ -494,9 +483,7 @@ def bandPassFilter(data, freq_low, freq_high, sampling_frequency=1.0, axis=0):
     frequencies = np.fft.fftfreq(data.shape[-1], 1 / sampling_frequency)
 
     # Create a frequency mask to keep only the frequencies within the band-pass range
-    mask = (np.abs(frequencies) >= freq_low) & (
-        np.abs(frequencies) <= freq_high
-    )
+    mask = (np.abs(frequencies) >= freq_low) & (np.abs(frequencies) <= freq_high)
 
     # Apply the mask to the FFT data
     filtered_fft_data = fft_data * mask
