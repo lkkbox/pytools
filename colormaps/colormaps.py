@@ -2,7 +2,6 @@ import numpy as np
 import os
 import inspect
 from matplotlib.colors import ListedColormap
-from ..plottools.shading import contourf2
 from ..caltools import interp_1d
 import colorsys
 
@@ -10,30 +9,6 @@ import colorsys
 def example():
     colors = ["green", "black", "white", "red", "yellow"]
     makeColorMap(colors, None, [-0.2, 1.2])
-
-
-def example():
-    import matplotlib.pyplot as plt
-    from ..caltools import mirror
-
-    levels = mirror([0.2, 0.4, 0.6, 0.8, 1, 1.5])
-    colorName = "matlab_hsv"
-    colorName = "precip_diff_12lev"
-    cmap = nclColormap(colorName=colorName, numResampling=23)
-
-    x = np.linspace(0, 2 * np.pi, 100)
-    y = np.linspace(0, 2 * np.pi, 100)
-    z = np.sin(2 * x)[None, :] + np.sin(3 * y)[:, None]
-
-    fig, ax = plt.subplots()
-    hcf, cbar = contourf2(ax, x, y, z, levels=levels, cmap=cmap, extend="both")
-    # ax.contour(x, y, z, levels=levels, colors='grey', linestyles='-')
-    # hcf = ax.contourf(
-    #     x, y, z, levels=levels,
-    #     cmap=cmap, extend='both', vmin=-1.8, vmax=1.8
-    # )
-    # fig.colorbar(hcf)
-    fig.savefig("../messy/a.png")
 
 
 def makeColorMap(colors0, numResampling=None, vRange=None):
@@ -85,9 +60,7 @@ def makeColorMap(colors0, numResampling=None, vRange=None):
     return ListedColormap(colors1)
 
 
-def nclColormap(
-    colorName="matlab_hsv", numResampling=None, vRange=None, reverse=False
-):
+def nclColormap(colorName="matlab_hsv", numResampling=None, vRange=None, reverse=False):
     def isValidColorName(colorName):
         dirName = _getNclDirectory()
         extensions = _getNclExtensions()
