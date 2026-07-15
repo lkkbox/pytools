@@ -279,9 +279,7 @@ def save(
                     raise Exception(
                         f"the dimension {
                             dimname
-                        } has different shape than in the existing file.\n{
-                            fileName
-                        }"
+                        } has different shape than in the existing file.\n{fileName}"
                     )
 
         # check varaible exists
@@ -371,9 +369,7 @@ def errorIfInvalidVarStruct(varStruct):
     # check consistency
     if var_shape != dim_shape:
         raise ValueError(
-            f"shape of (var) & (dim) are inconsistent: {var_shape} & {
-                dim_shape
-            }"
+            f"shape of (var) & (dim) are inconsistent: {var_shape} & {dim_shape}"
         )
 
     return True
@@ -659,9 +655,7 @@ def ncreadByDimRange(
     # ---- check numDims
     numDims = len(dimNames)
     if len(minMaxs) != numDims:
-        raise ValueError(
-            f"incorrect number ({len(minMaxs)}) of minMaxs, {dimNames=}"
-        )
+        raise ValueError(f"incorrect number ({len(minMaxs)}) of minMaxs, {dimNames=}")
 
     #
     # ---- begins ---- #
@@ -737,8 +731,6 @@ def ncreadByDimRange(
         raise RuntimeError(f"{fileName = }, {varName = }, {slices = }")
 
     data = np.array(data)
-    data = np.flip(
-        data, axis=[iax for iax, rev in enumerate(dimsAreReversed) if rev]
-    )
+    data = np.flip(data, axis=[iax for iax, rev in enumerate(dimsAreReversed) if rev])
 
     return data, dimensionsFlipped

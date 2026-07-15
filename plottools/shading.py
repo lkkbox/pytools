@@ -4,14 +4,29 @@ import numpy as np
 from .colormaps import get_cmap_colors
 
 
-def contourf(ax: Axes, x, y, z, levels, cmap="viridis", *arg, **kwarg):
+def contourf(
+    ax: Axes,
+    x,
+    y,
+    z,
+    levels,
+    cmap: str = "viridis",
+    lineOpts: None | dict = None,
+    *arg,
+    **kwarg,
+):
     """return the contourf handle"""
     z2, levels2 = _rescale(z, levels)
     colors = get_cmap_colors(cmap, len(levels2) + 1)
-    hcf = ax.contourf(
+    h1 = ax.contourf(
         x, y, z2, *arg, levels=levels2, colors=colors, extend="both", **kwarg
     )
-    return hcf
+
+    if lineOpts is None:
+        return h1
+
+    h2 = ax.contour(x, y, z, levels=levels, **lineOpts)
+    return h1, h2
 
 
 def _rescale(z, levels) -> tuple[np.ndarray, list[int]]:
