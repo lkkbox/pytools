@@ -21,6 +21,7 @@ def draw_colorbar(
     levels: list[float],
     cmap: str,
     orientation: Literal["h", "v"] = "h",
+    coverage: tuple[float, float] = (0, 1),
 ):
     ncolors = len(levels) + 1
     x = list(range(ncolors))
@@ -46,6 +47,7 @@ def draw_colorbar(
         z,
         levels,
         cmap,
+        coverage=coverage,
     )
 
     ax.set_xlim(x[0], x[-1])
