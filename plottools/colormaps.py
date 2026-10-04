@@ -39,13 +39,16 @@ _CMAP_NAMES_MPL = matplotlib.colormaps()
 _CMAP_NAMES_NCL = _get_valid_ncl_cmap_names()
 
 
-def _get_mpl_cmap_colors(name: str, n: int) -> list[tuple[float, ...]]:
+def _get_mpl_cmap_colors(
+    name: str, n: int, coverage: tuple[float, float] = (0, 1)
+) -> list[tuple[float, ...]]:
     if name not in _CMAP_NAMES_MPL:
         print(f"valid names: {_CMAP_NAMES_MPL}")
         raise ValueError(f"{name=} is not a valid MPL colormap name.")
 
     cmap = plt.get_cmap(name)
-    return [cmap(value / (n - 1)) for value in range(n)]
+    x = np.linspace(coverage[0], coverage[1], n)
+    return [cmap(val) for val in range(x)]
 
 
 def _get_ncl_cmap_colors(
