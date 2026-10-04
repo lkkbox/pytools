@@ -63,8 +63,8 @@ def _get_ncl_cmap_colors(
 
     rgb0 = _read_ncl_cmap_file(fileName)
 
-    x = np.linspace(0, 1, n)
-    x0 = np.linspace(coverage[0], coverage[1], len(rgb0))
+    x = np.linspace(coverage[0], coverage[1], n)
+    x0 = np.linspace(0, 1, len(rgb0))
 
     rgb = interp_1d(x0, rgb0, x)
     return rgb
