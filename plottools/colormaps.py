@@ -48,7 +48,7 @@ def _get_mpl_cmap_colors(
 
     cmap = plt.get_cmap(name)
     x = np.linspace(coverage[0], coverage[1], n)
-    return [cmap(val) for val in range(x)]
+    return [cmap(val) for val in x]
 
 
 def _get_ncl_cmap_colors(
@@ -124,7 +124,7 @@ def get_cmap_colors(
     name: str, n: int, coverage: tuple[float, float] = (0, 1)
 ) -> list[tuple[float, ...]]:
     if name in _CMAP_NAMES_MPL:
-        return _get_mpl_cmap_colors(name, n)
+        return _get_mpl_cmap_colors(name, n, coverage)
 
     elif name in _CMAP_NAMES_NCL:
         colors = _get_ncl_cmap_colors(name, n, coverage)
