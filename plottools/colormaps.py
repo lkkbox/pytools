@@ -1,9 +1,10 @@
-import numpy as np
-import os
 import inspect
-import colorsys
+import os
+
 import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
+
 from ..caltools.caltools import interp_1d
 
 
@@ -47,7 +48,9 @@ def _get_mpl_cmap_colors(name: str, n: int) -> list[tuple[float, ...]]:
     return [cmap(value / (n - 1)) for value in range(n)]
 
 
-def _get_ncl_cmap_colors(name: str, n: int) -> list[tuple[float, ...]]:
+def _get_ncl_cmap_colors(
+    name: str, n: int, coverage: tuple[float, float] = (0, 1)
+) -> list[tuple[float, ...]]:
     if name not in _CMAP_NAMES_NCL:
         print(f"valid names: {_CMAP_NAMES_NCL}")
         raise ValueError(f"{name=} is not a valid NCL colormap name.")
@@ -59,13 +62,9 @@ def _get_ncl_cmap_colors(name: str, n: int) -> list[tuple[float, ...]]:
             break
 
     rgb0 = _read_ncl_cmap_file(fileName)
-    hsv0 = [colorsys.rgb_to_hsv(r, g, b) for r, g, b in rgb0]
 
     x = np.linspace(0, 1, n)
-    x0 = np.linspace(0, 1, len(rgb0))
-
-    # hsv = interp_1d(x0, hsv0, x)
-    # return [colorsys.hsv_to_rgb(h, s, v) for h, s, v in hsv]
+    x0 = np.linspace(coverage[0], coverage[1], len(rgb0))
 
     rgb = interp_1d(x0, rgb0, x)
     return rgb
@@ -84,8 +83,8 @@ def _read_ncl_cmap_file(fileName) -> list[tuple[float, ...]]:
         if len(numbers) not in (3, 4):  # r, g, b
             return invalid
 
-        if any([number > 255 for number in numbers]) or any(
-            [number < 0 for number in numbers]
+        if any(number > 255 for number in numbers) or any(
+            number < 0 for number in numbers
         ):
             return invalid
 
@@ -93,9 +92,7 @@ def _read_ncl_cmap_file(fileName) -> list[tuple[float, ...]]:
 
     def all_are_num_space(line):
         isNumSpace = [char not in " .0123456789" for char in line]
-        if any(isNumSpace):
-            return False
-        return True
+        return not any(isNumSpace)
 
     with open(fileName, "r") as h:
         lines = h.read()
@@ -120,12 +117,14 @@ def _read_ncl_cmap_file(fileName) -> list[tuple[float, ...]]:
     return rgbList
 
 
-def get_cmap_colors(name: str, n: int) -> list[tuple[float, ...]]:
+def get_cmap_colors(
+    name: str, n: int, coverage: tuple[float, float] = (0, 1)
+) -> list[tuple[float, ...]]:
     if name in _CMAP_NAMES_MPL:
         return _get_mpl_cmap_colors(name, n)
 
     elif name in _CMAP_NAMES_NCL:
-        colors = _get_ncl_cmap_colors(name, n)
+        colors = _get_ncl_cmap_colors(name, n, coverage)
         return colors
 
     else:

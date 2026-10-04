@@ -1,6 +1,8 @@
-from matplotlib.axes import Axes
 from typing import Literal
+
 import numpy as np
+from matplotlib.axes import Axes
+
 from .colormaps import get_cmap_colors
 
 
@@ -12,12 +14,13 @@ def contourf(
     levels,
     cmap: str = "viridis",
     lineOpts: None | dict = None,
+    coverage: tuple[float, float] = (0, 1),
     *arg,
     **kwarg,
 ):
     """return the contourf handle"""
     z2, levels2 = _rescale(z, levels)
-    colors = get_cmap_colors(cmap, len(levels2) + 1)
+    colors = get_cmap_colors(cmap, len(levels2) + 1, coverage)
     h1 = ax.contourf(
         x, y, z2, *arg, levels=levels2, colors=colors, extend="both", **kwarg
     )
