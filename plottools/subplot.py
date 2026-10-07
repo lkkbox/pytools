@@ -243,6 +243,7 @@ class Subplot:
         rdy: float,
         rxoffset: float = 0,
         ryoffset: float = 0,
+        coverage: tuple[float, float] = (0, 1),
     ) -> Axes:
         """
         fig: Figure,
@@ -258,7 +259,7 @@ class Subplot:
             orientation = "v"
 
         ax = self.create_sided_ax(fig, iside, rdx, rdy, rxoffset, ryoffset)
-        draw_colorbar(ax, levels, cmap, orientation)
+        draw_colorbar(ax, levels, cmap, orientation, coverage)
 
         if iside == 0:
             ax.yaxis.tick_right()
